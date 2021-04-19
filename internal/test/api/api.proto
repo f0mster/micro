@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package sessionInternalAPI;
+//option go_package = "github.com/f0mster/micro/qqq";
+
+// @event OnConnectEvent, OnDisconnectEvent
+service SessionInternalAPIService {
+  rpc Connect (ConnectReq) returns (ConnectResp);
+  rpc Disconnect (StringMsg) returns (BoolMsg);
+}
+
+message StringMsg {
+  string value = 1;
+}
+
+message BoolMsg {
+  bool value = 1;
+}
+
+message ConnectReq {
+  string id = 1;
+  int64 user_id = 2;
+  string ip = 3;
+  string os = 4;
+  string version = 5;
+  string build = 6;
+  int64 last_changed_at = 7;
+  string push_token_text = 8;
+}
+
+message OnConnectEvent {
+  string id = 1;
+  int64 user_id = 2;
+  string ip = 3;
+  string os = 4;
+  string version = 5;
+  string build = 6;
+  int64 last_changed_at = 7;
+  string push_token_text = 8;
+}
+
+
+message ConnectResp {
+  int64 value = 1;
+}
+
+message OnDisconnectEvent {
+  int64 value = 1;
+}

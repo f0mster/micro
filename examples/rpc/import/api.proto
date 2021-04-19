@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package sessionInternalAPI;
+//option go_package = "github.com/f0mster/micro/qqq";
+
+service SessionInternalAPI {
+  // Connect.
+  //
+  // Do something.
+  rpc Connect (ConnectReq) returns (ConnectResp);
+}
+
+message ConnectReq {
+  string id = 1;
+}
+
+message ConnectResp {
+  int64 value = 1;
+}

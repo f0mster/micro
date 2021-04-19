@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package sessionInternalAPI;
+
+// @event ConnectEvent
+service SessionInternalAPI {
+}
+
+message ConnectEvent {
+  string id = 1;
+}

@@ -46,11 +46,9 @@ func main() {
 		log.Warn("-proto flag must be used")
 		os.Exit(1)
 	}
-	var out string
+	out := path.Base(*fProto) + ".rpc.go"
 	if *foutPath == "" {
-		out = *fProto + ".rpc.go"
-	} else {
-		out = path.Join(*foutPath, path.Base(*fProto)+".rpc.go")
+		out = path.Join(*foutPath, out)
 	}
 	err := Generate(*fProto, out)
 	if err != nil {

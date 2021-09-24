@@ -21,6 +21,7 @@ func main() {
 	fDebug := flag.Bool("d", false, "debug mode")
 	fVerboseDebug := flag.Bool("dd", false, "more verbose debug mode")
 	fProto := flag.String("proto", "", "path to proto file")
+	foutPath := flag.String("out", "", "output path")
 	flag.Parse()
 
 	if *fDebug || *fVerboseDebug {
@@ -45,8 +46,13 @@ func main() {
 		log.Warn("-proto flag must be used")
 		os.Exit(1)
 	}
-
-	err := Generate(*fProto, *fProto+".rpc.go")
+	var out string
+	if *foutPath == "" {
+		out = *fProto + ".rpc.go"
+	} else {
+		out = path.Join(*foutPath, path.Base(*fProto)+".rpc.go")
+	}
+	err := Generate(*fProto, out)
 	if err != nil {
 		log.Errorf("gen error: %s", err)
 	}

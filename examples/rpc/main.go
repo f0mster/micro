@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/f0mster/micro/client"
 	events_memory "github.com/f0mster/micro/pubsub/memory"
 	rpc_memory "github.com/f0mster/micro/rpc/memory"
 	"github.com/f0mster/micro/server"
-
-	"time"
 
 	api "github.com/f0mster/micro/examples/rpc/import"
 	registry_memory "github.com/f0mster/micro/registry/memory"

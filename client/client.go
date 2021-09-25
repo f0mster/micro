@@ -56,15 +56,15 @@ func NewClient(config Config) (*Client, error) {
 }
 
 type marshaller interface {
-	Marshal() ([]byte, error)
+	MarshalVT() ([]byte, error)
 }
 
 type unmarshaler interface {
-	Unmarshal([]byte) error
+	UnmarshalVT([]byte) error
 }
 
 func (c *Client) CallWithMarshaller(ctx context.Context, serviceName string, funcName string, protoData marshaller, result unmarshaler, opt ...CallOption) (err error) {
-	req, err := protoData.Marshal()
+	req, err := protoData.MarshalVT()
 	if err != nil {
 		return
 	}
@@ -72,7 +72,7 @@ func (c *Client) CallWithMarshaller(ctx context.Context, serviceName string, fun
 	if err != nil {
 		return
 	}
-	return result.Unmarshal(data)
+	return result.UnmarshalVT(data)
 }
 
 func (c *Client) Call(ctx context.Context, serviceName string, funcName string, protoData []byte, opt ...CallOption) (resp []byte, err error) {

@@ -3,7 +3,7 @@
 ## Требования
 
 * protoc
-* https://github.com/gogo/protobuf
+* https://github.com/planetscale/vtprotobuf
 
 ## Кодогенерация
 
@@ -12,7 +12,7 @@
 Пример для файла: `api.proto`
 
 Перед запуском выполнить
-```protoc -I=. --proto_path=. --gofast_out=. api.proto```
+```protoc -I=. --proto_path=. --go_out=. --go-vtproto_out=. api.proto```
 После чего выполнить
 ```rendall-rpc-code-gen -proto=api.proto```
 

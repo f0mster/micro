@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-package sessionInternalAPI;
+package api;
+
+option go_package = "github.com/f0mster/micro/examples/pubsub/api";
 
 // @event ConnectEvent
 service SessionInternalAPI {

@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package sessionInternalAPI;
-
-message ConnectEvent {
-  string id = 1;
-}

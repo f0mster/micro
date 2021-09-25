@@ -122,7 +122,7 @@ func (h *{{$serviceName}}Service) listenRPC(funcName string, ctx []byte, argumen
 		{{- range $index, $rpc := $service.Rpc}}
 		case "{{$rpc.Name}}":
 			arg := {{$rpc.Request}}{}
-			err = arg.Unmarshal(arguments)
+			err = arg.UnmarshalVT(arguments)
 			if err != nil {
 				return err
 			}
@@ -138,7 +138,7 @@ func (h *{{$serviceName}}Service) listenRPC(funcName string, ctx []byte, argumen
 				resp = new({{$rpc.Response}})
 			}
 
-			r, err = resp.Marshal()
+			r, err = resp.MarshalVT()
 			if err != nil {
 				return err
 			}
@@ -199,7 +199,7 @@ func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|Title}}(ctx cont
 	var r []byte
 	var err error
 	if event != nil {
-		r, err = event.Marshal()
+		r, err = event.MarshalVT()
 		if err != nil {
 			return fmt.Errorf("can't marshal event to proto: %w", err)
 		}
@@ -300,7 +300,7 @@ func (c *{{$serviceName}}Client) Subscribe{{$event|Title}}(callback func(ctx con
 	stop, err = c.client.GetConfig().PubSub.Subscribe("{{$serviceName}}", "{{$event}}", func(ctxData, event []byte) error {
 		log := c.client.GetConfig().Logger
 		ev := {{$event}}{}
-		err := ev.Unmarshal(event)
+		err := ev.UnmarshalVT(event)
 		log.Debug("got event", "{{$serviceName}}", "{{$event}}")
 		if err != nil {
 			log.Error(err, "error while unmarshalling event", "{{$serviceName}}", "{{$event}}", string(event))

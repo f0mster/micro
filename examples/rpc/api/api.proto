@@ -8,6 +8,7 @@ service SessionInternalAPI {
   //
   // Do something.
   rpc Connect (ConnectReq) returns (ConnectResp);
+  rpc snake_func_name(snake_message) returns (snake_message);
 }
 
 message ConnectReq {
@@ -16,4 +17,8 @@ message ConnectReq {
 
 message ConnectResp {
   int64 value = 1;
+}
+
+message snake_message {
+
 }

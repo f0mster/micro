@@ -14,21 +14,21 @@ import (
 	"sync/atomic"
 )
 {{range $serviceName, $service := .Services}}
-type {{$serviceName}} interface {
+type {{ToCamelCase $serviceName}} interface {
 	{{- range $index, $rpc := $service.Rpc}}
 	{{ if $rpc.Comments }}
 	{{- range $i, $c := $rpc.Comments }}
 	//{{$c}} 
 	{{- end -}}
 	{{- end }}
-	{{$rpc.Name}}(ctx context.Context, req *{{$rpc.Request}}) (resp *{{$rpc.Response}}, err error)
+	{{ToCamelCase $rpc.Name}}(ctx context.Context, req *{{$rpc.Request|ToCamelCase}}) (resp *{{$rpc.Response|ToCamelCase}}, err error)
 	{{- end}}
 }
 {{end}}
 
 {{- range $serviceName, $service := .Services}}
 type {{$serviceName|Title}}Service struct {
-	handler    {{$serviceName}}
+	handler    {{ToCamelCase $serviceName}}
 	config     server.Config
 	instanceId string
 	started    int32
@@ -36,17 +36,17 @@ type {{$serviceName|Title}}Service struct {
 	publisher  *{{$serviceName|Title}}EventsPublisher
 }
 
-func (h *{{$serviceName}}Service) GetInstanceId() string {
+func (h *{{ToCamelCase $serviceName}}Service) GetInstanceId() string {
 	return h.instanceId
 }
 
 /*
-func Register{{$serviceName|Title}}ServerWithOptions(service {{$serviceName}}, opts ... server.Option) *{{$serviceName|Title}}Server {
+func Register{{$serviceName|Title}}ServerWithOptions(service {{ToCamelCase $serviceName}}, opts ... server.Option) *{{$serviceName|Title}}Server {
 	//TODO
 }
 */
 
-func Register{{$serviceName|Title}}Server(handler {{$serviceName}}, srv *server.Server) (*{{$serviceName|Title}}Service, error) {
+func Register{{$serviceName|Title}}Server(handler {{ToCamelCase $serviceName}}, srv *server.Server) (*{{$serviceName|Title}}Service, error) {
 	insId, err := rnd.GenerateRandomString(20)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func Register{{$serviceName|Title}}Server(handler {{$serviceName}}, srv *server.
 	if err != nil {
 		return nil, err
 	}
-	ins := &{{$serviceName}}Service{
+	ins := &{{ToCamelCase $serviceName}}Service{
 		handler:    handler,
 		instanceId: insId,
 		config:     cfg,
@@ -74,7 +74,7 @@ func Register{{$serviceName|Title}}Server(handler {{$serviceName}}, srv *server.
 }
 
 type starter{{$serviceName|Title}} struct {
-	ins *{{$serviceName}}Service
+	ins *{{ToCamelCase $serviceName}}Service
 }
 
 func (s *starter{{$serviceName|Title}}) Start() {
@@ -103,12 +103,12 @@ func (c *{{$serviceName|Title}}Service) WatchInstanceUnregistered(callback func(
 }
 
 {{- range $index, $event := $service.Events}}
-func (s *{{$serviceName}}Service) Publish{{$event|Title}}(ctx context.Context, event *{{$event}}) error {
-	return s.publisher.Publish{{$event|Title}}(ctx, event)
+func (s *{{ToCamelCase $serviceName}}Service) Publish{{ToCamelCase $event}}(ctx context.Context, event *{{$event|ToCamelCase}}) error {
+	return s.publisher.Publish{{$event|ToCamelCase}}(ctx, event)
 }
 {{- end}}
 
-func (h *{{$serviceName}}Service) listenRPC(funcName string, ctx []byte, arguments []byte) (r []byte, err error) {
+func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, ctx []byte, arguments []byte) (r []byte, err error) {
 	pCtx, _, err := h.config.ContextMarshaller.Unmarshal(ctx)
 	if err != nil {
 		return nil, err
@@ -121,21 +121,21 @@ func (h *{{$serviceName}}Service) listenRPC(funcName string, ctx []byte, argumen
 		switch funcName {
 		{{- range $index, $rpc := $service.Rpc}}
 		case "{{$rpc.Name}}":
-			arg := {{$rpc.Request}}{}
+			arg := {{$rpc.Request|ToCamelCase}}{}
 			err = arg.UnmarshalVT(arguments)
 			if err != nil {
 				return err
 			}
 
-			var resp *{{$rpc.Response}}
-			resp, err = h.handler.{{$rpc.Name}}(ctx, &arg)
+			var resp *{{$rpc.Response|ToCamelCase}}
+			resp, err = h.handler.{{$rpc.Name|ToCamelCase}}(ctx, &arg)
 			if err != nil {
 				return err
 			}
 			
 			// XXX: avoid nil panic if handler returned <nil, nil>.
 			if resp == nil {
-				resp = new({{$rpc.Response}})
+				resp = new({{$rpc.Response|ToCamelCase}})
 			}
 
 			r, err = resp.MarshalVT()
@@ -195,7 +195,7 @@ func (s *{{$serviceName|Title}}EventsPublisher) SetWrapper(PubSubWrapper func(ct
 }
 
 {{- range $index, $event := $service.Events}}
-func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|Title}}(ctx context.Context, event *{{$event}}) error {
+func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|ToCamelCase}}(ctx context.Context, event *{{$event|ToCamelCase}}) error {
 	var r []byte
 	var err error
 	if event != nil {
@@ -221,7 +221,7 @@ func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|Title}}(ctx cont
 	if s.wrapper == nil {
 		return cb(ctx)
 	}
-	return s.wrapper(ctx, "{{$serviceName}}", "{{$event}}", cb)
+	return s.wrapper(ctx, "{{ToCamelCase $serviceName}}", "{{$event}}", cb)
 }
 {{- end}}
 
@@ -229,17 +229,17 @@ func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|Title}}(ctx cont
 // Client
 //
 
-type {{$serviceName}}Client struct {
+type {{ToCamelCase $serviceName}}Client struct {
 	client			*client.Client
 	block           bool
 }
 
-func New{{$serviceName|Title}}Client(config client.Config, opt ...ClientOpt) (*{{$serviceName}}Client, error) {
+func New{{$serviceName|Title}}Client(config client.Config, opt ...ClientOpt) (*{{ToCamelCase $serviceName}}Client, error) {
 	cClient, err := client.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
-	cli := &{{$serviceName}}Client{
+	cli := &{{ToCamelCase $serviceName}}Client{
 		client: cClient,
 	}
 	for _, o := range opt {
@@ -253,21 +253,21 @@ func New{{$serviceName|Title}}Client(config client.Config, opt ...ClientOpt) (*{
 	return cli, nil
 }
 
-type ClientOpt func(c *{{$serviceName}}Client)
+type ClientOpt func(c *{{ToCamelCase $serviceName}}Client)
 
 func WithBlock() ClientOpt {
-	return func(c *{{$serviceName}}Client) {
+	return func(c *{{ToCamelCase $serviceName}}Client) {
 		c.block = true
 	}
 }
 
 // watch on service register
-func (c *{{$serviceName}}Client) WatchRegistered(callback func()) registry.CancelFunc {
+func (c *{{ToCamelCase $serviceName}}Client) WatchRegistered(callback func()) registry.CancelFunc {
 	return c.client.GetConfig().Registry.WatchRegistered("{{$serviceName}}", callback)
 }
 
 // watch on service unregister
-func (c *{{$serviceName}}Client) WatchUnregistered(callback func()) registry.CancelFunc {
+func (c *{{ToCamelCase $serviceName}}Client) WatchUnregistered(callback func()) registry.CancelFunc {
 	return c.client.GetConfig().Registry.WatchUnregistered("{{$serviceName}}", callback)
 }
 
@@ -278,8 +278,8 @@ func (c *{{$serviceName}}Client) WatchUnregistered(callback func()) registry.Can
 //{{$c}} 
 {{- end -}}
 {{- end }}
-func (c *{{$serviceName}}Client) {{$rpc.Name}}(ctx context.Context, request *{{$rpc.Request}}, callOpts ...client.CallOption) (response *{{$rpc.Response}}, err error) {
-	response = &{{$rpc.Response}}{}
+func (c *{{ToCamelCase $serviceName}}Client) {{ToCamelCase $rpc.Name}}(ctx context.Context, request *{{$rpc.Request|ToCamelCase}}, callOpts ...client.CallOption) (response *{{$rpc.Response|ToCamelCase}}, err error) {
+	response = &{{$rpc.Response|ToCamelCase}}{}
 	err = c.client.CallWithMarshaller(ctx, "{{$serviceName}}", "{{$rpc.Name}}", request, response, callOpts...)
 	if err != nil {
 		return nil, err
@@ -291,15 +291,15 @@ func (c *{{$serviceName}}Client) {{$rpc.Name}}(ctx context.Context, request *{{$
 
 {{- range $index, $event := $service.Events}}
 
-func (c *{{$serviceName}}Client) Unsubscribe{{$event|Title}}() {
+func (c *{{ToCamelCase $serviceName}}Client) Unsubscribe{{$event|ToCamelCase}}() {
 	c.client.Unsubscribe("{{$serviceName}}", "{{$event}}")
 }
 
 // Nil error in callback required to stop event retrying, if it supported by pubsub provider
-func (c *{{$serviceName}}Client) Subscribe{{$event|Title}}(callback func(ctx context.Context, event *{{$event}}) error) (stop pubsub.CancelFunc, err error) {
+func (c *{{ToCamelCase $serviceName}}Client) Subscribe{{$event|ToCamelCase}}(callback func(ctx context.Context, event *{{$event|ToCamelCase}}) error) (stop pubsub.CancelFunc, err error) {
 	stop, err = c.client.GetConfig().PubSub.Subscribe("{{$serviceName}}", "{{$event}}", func(ctxData, event []byte) error {
 		log := c.client.GetConfig().Logger
-		ev := {{$event}}{}
+		ev := {{$event|ToCamelCase}}{}
 		err := ev.UnmarshalVT(event)
 		log.Debug("got event", "{{$serviceName}}", "{{$event}}")
 		if err != nil {

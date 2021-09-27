@@ -4,10 +4,12 @@ package api;
 
 option go_package = "github.com/f0mster/micro/examples/pubsub/api";
 
-// @event ConnectEvent
+// @event ConnectEvent, snake_case_event
 service SessionInternalAPI {
 }
 
 message ConnectEvent {
   string id = 1;
 }
+
+message snake_case_event {}

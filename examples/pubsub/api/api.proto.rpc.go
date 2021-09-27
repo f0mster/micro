@@ -94,6 +94,9 @@ func (c *SessionInternalAPIService) WatchInstanceUnregistered(callback func(inst
 func (s *SessionInternalAPIService) PublishConnectEvent(ctx context.Context, event *ConnectEvent) error {
 	return s.publisher.PublishConnectEvent(ctx, event)
 }
+func (s *SessionInternalAPIService) PublishSnakeCaseEvent(ctx context.Context, event *SnakeCaseEvent) error {
+	return s.publisher.PublishSnakeCaseEvent(ctx, event)
+}
 
 func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, arguments []byte) (r []byte, err error) {
 	pCtx, _, err := h.config.ContextMarshaller.Unmarshal(ctx)
@@ -177,6 +180,34 @@ func (s *SessionInternalAPIEventsPublisher) PublishConnectEvent(ctx context.Cont
 	}
 	return s.wrapper(ctx, "SessionInternalAPI", "ConnectEvent", cb)
 }
+func (s *SessionInternalAPIEventsPublisher) PublishSnakeCaseEvent(ctx context.Context, event *SnakeCaseEvent) error {
+	var r []byte
+	var err error
+	if event != nil {
+		r, err = event.MarshalVT()
+		if err != nil {
+			return fmt.Errorf("can't marshal event to proto: %w", err)
+		}
+	}
+	cb := func(ctx context.Context) error {
+		ctxData, err := s.cm.Marshal(ctx)
+		if err != nil {
+			return fmt.Errorf("can't marshal context data: %w", err)
+		}
+
+		err = s.ps.Publish("SessionInternalAPI", "snake_case_event", ctxData, r)
+		if err != nil {
+			return fmt.Errorf("error while publishing error: %w", err)
+		}
+
+		return nil
+	}
+
+	if s.wrapper == nil {
+		return cb(ctx)
+	}
+	return s.wrapper(ctx, "SessionInternalAPI", "snake_case_event", cb)
+}
 
 //
 // Client
@@ -254,6 +285,48 @@ func (c *SessionInternalAPIClient) SubscribeConnectEvent(callback func(ctx conte
 				return nil
 			}
 			err = wrap(ctx, "SessionInternalAPI", "ConnectEvent", wrapCB)
+			return err
+		}
+		err = callback(ctx, &ev)
+		if err != nil {
+			return fmt.Errorf("error while calling subscribe callback: %w", err)
+		}
+		return nil
+	})
+
+	return stop, err
+}
+
+func (c *SessionInternalAPIClient) UnsubscribeSnakeCaseEvent() {
+	c.client.Unsubscribe("SessionInternalAPI", "snake_case_event")
+}
+
+// Nil error in callback required to stop event retrying, if it supported by pubsub provider
+func (c *SessionInternalAPIClient) SubscribeSnakeCaseEvent(callback func(ctx context.Context, event *SnakeCaseEvent) error) (stop pubsub.CancelFunc, err error) {
+	stop, err = c.client.GetConfig().PubSub.Subscribe("SessionInternalAPI", "snake_case_event", func(ctxData, event []byte) error {
+		log := c.client.GetConfig().Logger
+		ev := SnakeCaseEvent{}
+		err := ev.UnmarshalVT(event)
+		log.Debug("got event", "SessionInternalAPI", "snake_case_event")
+		if err != nil {
+			log.Error(err, "error while unmarshalling event", "SessionInternalAPI", "snake_case_event", string(event))
+			return fmt.Errorf("error while unmarshalling event: %w", err)
+		}
+		ctx, _, err := c.client.GetConfig().ContextMarshaller.Unmarshal(ctxData)
+		if err != nil {
+			log.Error(err, "error while unmarshalling context data", "SessionInternalAPI", "snake_case_event", string(ctxData))
+			return fmt.Errorf("error while unmarshalling context data: %w", err)
+		}
+		wrap := c.client.GetConfig().PubSubWrapper
+		if wrap != nil {
+			wrapCB := func(ctx context.Context) error {
+				err = callback(ctx, &ev)
+				if err != nil {
+					return fmt.Errorf("error while calling subscribe callback: %w", err)
+				}
+				return nil
+			}
+			err = wrap(ctx, "SessionInternalAPI", "snake_case_event", wrapCB)
 			return err
 		}
 		err = callback(ctx, &ev)

@@ -50,6 +50,28 @@ func createFromTemplate(generatedFilePath string, data interface{}, tpl string) 
 		},
 		"Title":   strings.Title,
 		"ToLower": strings.ToLower,
+		"ToCamelCase": func(inputUnderScoreStr string) (camelCase string) {
+			//snake_case to camelCase
+			isToUpper := false
+			for k, v := range inputUnderScoreStr {
+				if k == 0 {
+					camelCase = strings.ToUpper(string(inputUnderScoreStr[0]))
+				} else {
+					if isToUpper {
+						camelCase += strings.ToUpper(string(v))
+						isToUpper = false
+					} else {
+						if v == '_' {
+							isToUpper = true
+						} else {
+							camelCase += string(v)
+						}
+					}
+				}
+			}
+			return
+
+		},
 	}
 
 	// TODO: add some code generation for registry; add listen to rpc direct commands

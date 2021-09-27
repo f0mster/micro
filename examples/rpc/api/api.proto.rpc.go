@@ -20,6 +20,8 @@ type SessionInternalAPI interface {
 	//
 	// Do something.
 	Connect(ctx context.Context, req *ConnectReq) (resp *ConnectResp, err error)
+
+	SnakeFuncName(ctx context.Context, req *SnakeMessage) (resp *SnakeMessage, err error)
 }
 
 type SessionInternalAPIService struct {
@@ -129,6 +131,29 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, argum
 				return err
 			}
 			return nil
+		case "snake_func_name":
+			arg := SnakeMessage{}
+			err = arg.UnmarshalVT(arguments)
+			if err != nil {
+				return err
+			}
+
+			var resp *SnakeMessage
+			resp, err = h.handler.SnakeFuncName(ctx, &arg)
+			if err != nil {
+				return err
+			}
+
+			// XXX: avoid nil panic if handler returned <nil, nil>.
+			if resp == nil {
+				resp = new(SnakeMessage)
+			}
+
+			r, err = resp.MarshalVT()
+			if err != nil {
+				return err
+			}
+			return nil
 		default:
 			//TODO: not sure about this behavior
 			return fmt.Errorf("call of unknown rpc %s %s", "in service SessionInternalAPI ", funcName)
@@ -231,6 +256,16 @@ func (c *SessionInternalAPIClient) WatchUnregistered(callback func()) registry.C
 func (c *SessionInternalAPIClient) Connect(ctx context.Context, request *ConnectReq, callOpts ...client.CallOption) (response *ConnectResp, err error) {
 	response = &ConnectResp{}
 	err = c.client.CallWithMarshaller(ctx, "SessionInternalAPI", "Connect", request, response, callOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (c *SessionInternalAPIClient) SnakeFuncName(ctx context.Context, request *SnakeMessage, callOpts ...client.CallOption) (response *SnakeMessage, err error) {
+	response = &SnakeMessage{}
+	err = c.client.CallWithMarshaller(ctx, "SessionInternalAPI", "snake_func_name", request, response, callOpts...)
 	if err != nil {
 		return nil, err
 	}

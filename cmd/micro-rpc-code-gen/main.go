@@ -10,9 +10,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const appTitle = "RPC code generator (c) Rendall Labs 2020"
+const appTitle = "RPC code generator"
 
-var version = "unknown"
+var version = "v0.1.5"
 
 func main() {
 	fmt.Println(appTitle)

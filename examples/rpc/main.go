@@ -70,6 +70,10 @@ type serv struct {
 	srv *api.SessionInternalAPIService
 }
 
+func (s *serv) SnakeFuncName(ctx context.Context, req *api.SnakeMessage) (resp *api.SnakeMessage, err error) {
+	panic("implement me")
+}
+
 func (s *serv) Connect(ctx context.Context, req *api.ConnectReq) (resp *api.ConnectResp, err error) {
 	resp = &api.ConnectResp{Value: 10}
 	fmt.Println("function connect called")

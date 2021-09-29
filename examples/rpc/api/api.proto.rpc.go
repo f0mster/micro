@@ -117,7 +117,6 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, arguments []byte)
 	}
 
 	callRpc := func(ctx context.Context) error {
-
 		switch funcName {
 		case "Connect":
 			arg := ConnectReq{}

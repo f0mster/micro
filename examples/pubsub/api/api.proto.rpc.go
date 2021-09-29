@@ -116,9 +116,7 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, arguments []byte)
 	}
 
 	callRpc := func(ctx context.Context) error {
-
 		return fmt.Errorf("service have no rpcs")
-
 	}
 
 	wrap := h.config.RPCWrapper
@@ -177,7 +175,6 @@ func (s *SessionInternalAPIEventsPublisher) PublishConnectEvent(ctx context.Cont
 		if err != nil {
 			return fmt.Errorf("can't marshal context data: %w", err)
 		}
-
 		ec := DataWithContextApiProtoRpcGo{
 			Ctx:  ctxData,
 			Data: r,
@@ -186,12 +183,10 @@ func (s *SessionInternalAPIEventsPublisher) PublishConnectEvent(ctx context.Cont
 		if err != nil {
 			return fmt.Errorf("can't marshal json data: %w", err)
 		}
-
 		err = s.ps.Publish("SessionInternalAPI", "ConnectEvent", eventData)
 		if err != nil {
 			return fmt.Errorf("error while publishing error: %w", err)
 		}
-
 		return nil
 	}
 
@@ -214,7 +209,6 @@ func (s *SessionInternalAPIEventsPublisher) PublishSnakeCaseEvent(ctx context.Co
 		if err != nil {
 			return fmt.Errorf("can't marshal context data: %w", err)
 		}
-
 		ec := DataWithContextApiProtoRpcGo{
 			Ctx:  ctxData,
 			Data: r,
@@ -223,12 +217,10 @@ func (s *SessionInternalAPIEventsPublisher) PublishSnakeCaseEvent(ctx context.Co
 		if err != nil {
 			return fmt.Errorf("can't marshal json data: %w", err)
 		}
-
 		err = s.ps.Publish("SessionInternalAPI", "snake_case_event", eventData)
 		if err != nil {
 			return fmt.Errorf("error while publishing error: %w", err)
 		}
-
 		return nil
 	}
 

@@ -73,7 +73,7 @@ func Register{{$serviceName|Title}}Server(handler {{ToCamelCase $serviceName}}, 
 
 	str := starter{{$serviceName|Title}}{ins: ins}
 	err = srv.Register(&str)
-	if err!= nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -127,9 +127,9 @@ func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, argumen
 	}
 
 	callRpc := func(ctx context.Context) error {
-		{{ if eq (len $service.Rpc) 0 }}
+		{{- if eq (len $service.Rpc) 0 }}
 		return  fmt.Errorf("service have no rpcs")
-		{{ else }}
+		{{- else }}
 		switch funcName {
 		{{- range $index, $rpc := $service.Rpc}}
 		case "{{$rpc.Name}}":
@@ -170,7 +170,7 @@ func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, argumen
 			return nil, err
 		}
 		return r, nil
-	} 
+	}
 
 	err = callRpc(pCtx)
 	if err != nil {
@@ -180,7 +180,7 @@ func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, argumen
 	return r, nil
 }
 
-// 
+//
 // Event publisher
 //
 
@@ -216,26 +216,23 @@ func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|ToCamelCase}}(ct
 			return fmt.Errorf("can't marshal event to proto: %w", err)
 		}
 	}
-	cb := func (ctx context.Context) error {
+	cb := func(ctx context.Context) error {
 		ctxData, err := s.cm.Marshal(ctx)
 		if err != nil {
 			return fmt.Errorf("can't marshal context data: %w", err)
 		}
-
-	    ec :=DataWithContext{{$filename}}{
-	        Ctx: ctxData,
-	        Data: r,
-	    }
-        eventData, err := json.Marshal(ec)
+		ec :=DataWithContext{{$filename}}{
+			Ctx: ctxData,
+			Data: r,
+		}
+		eventData, err := json.Marshal(ec)
 		if err != nil {
 			return fmt.Errorf("can't marshal json data: %w", err)
 		}
-
 		err = s.ps.Publish("{{$serviceName}}", "{{$event}}", eventData)
 		if err != nil {
-			return fmt.Errorf("error while publishing error: %w",err)
+			return fmt.Errorf("error while publishing error: %w", err)
 		}
-	
 		return nil
 	}
 
@@ -337,7 +334,7 @@ func (c *{{ToCamelCase $serviceName}}Client) Subscribe{{$event|ToCamelCase}}(cal
 		wrap := c.client.GetConfig().PubSubWrapper
 		if wrap != nil {
 			wrapCB := func(ctx context.Context) error {
-				err = callback(ctx,&ev)
+				err = callback(ctx, &ev)
 				if err != nil {
 					return fmt.Errorf("error while calling subscribe callback: %w", err)
 				}
@@ -346,7 +343,7 @@ func (c *{{ToCamelCase $serviceName}}Client) Subscribe{{$event|ToCamelCase}}(cal
 			err = wrap(ctx, "{{$serviceName}}", "{{$event}}", wrapCB)
 			return err
 		}
-		err = callback(ctx,&ev)
+		err = callback(ctx, &ev)
 		if err != nil {
 			return fmt.Errorf("error while calling subscribe callback: %w", err)
 		}

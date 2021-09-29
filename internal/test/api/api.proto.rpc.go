@@ -5,12 +5,12 @@ package sessionInternalAPI
 import (
 	"context"
 	"fmt"
-	"github.com/f0mster/micro/client"
-	"github.com/f0mster/micro/interfaces/contextmarshaller"
-	"github.com/f0mster/micro/pkg/rnd"
-	"github.com/f0mster/micro/pubsub"
-	"github.com/f0mster/micro/registry"
-	"github.com/f0mster/micro/server"
+	"git.dev.rendall.im/rendall_server_lib/microservice/client"
+	"git.dev.rendall.im/rendall_server_lib/microservice/interfaces/contextmarshaller"
+	"git.dev.rendall.im/rendall_server_lib/microservice/pkg/rnd"
+	"git.dev.rendall.im/rendall_server_lib/microservice/pubsub"
+	"git.dev.rendall.im/rendall_server_lib/microservice/registry"
+	"git.dev.rendall.im/rendall_server_lib/microservice/server"
 	"sync/atomic"
 )
 

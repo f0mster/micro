@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -15,6 +16,10 @@ import (
 
 type TransportWrap func(ctx context.Context, serviceName, rpcName string, rpc func(ctx context.Context) error) error
 type PubSubWrap func(ctx context.Context, serviceName, eventName string, PubSubCallback func(ctx context.Context) error) error
+type DataWithContext struct {
+	Data []byte `json:"data"`
+	Ctx  []byte `json:"ctx"`
+}
 
 type Config struct {
 	RPCWrapper        TransportWrap
@@ -80,6 +85,13 @@ func (c *Client) Call(ctx context.Context, serviceName string, funcName string, 
 	if err != nil {
 		return
 	}
+	data, err := json.Marshal(DataWithContext{
+		Data: protoData,
+		Ctx:  ctxData,
+	})
+	if err != nil {
+		return
+	}
 	c.mu.Lock()
 	serviceReady, ok := c.ready[serviceName]
 	if !ok {
@@ -99,7 +111,7 @@ func (c *Client) Call(ctx context.Context, serviceName string, funcName string, 
 	if !serviceReady {
 		return nil, fmt.Errorf("service not started")
 	}
-	return c.config.RPC.Call(serviceName, funcName, ctxData, protoData)
+	return c.config.RPC.Call(serviceName, funcName, data)
 }
 
 func (c *Client) WaitForServiceStarted(serviceName string) {

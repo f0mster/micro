@@ -1,4 +1,4 @@
-package memory_test
+package kafka_test
 
 import (
 	"bytes"
@@ -21,6 +21,15 @@ import (
 	"github.com/f0mster/micro/pubsub"
 	"github.com/f0mster/micro/pubsub/memory"
 )
+
+/*
+  Внимание!
+
+  Для запуска необходим docker.
+
+  Адрес указывается через переменную окружения DOCKER_HOST.
+
+*/
 
 var appIndex int32
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 
@@ -20,6 +21,7 @@ type (
 		// map<messageName, map <enumName, *enum>>
 		messageEnums map[string]map[string]*proto.Enum
 		filepath     string
+		Filename     string
 	}
 	messagesStorItem struct {
 		msg *proto.Message
@@ -59,6 +61,7 @@ func Generate(fProto string, outFile string) error {
 		messageEnums: map[string]map[string]*proto.Enum{},
 		Services:     map[string]*service{},
 		filepath:     fProto,
+		Filename:     path.Base(outFile),
 	}
 
 	// step 1: collect messages

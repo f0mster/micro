@@ -9,7 +9,7 @@ import (
 
 type data struct {
 	lastEl    int64
-	callbacks map[int64]func(ctx, event []byte) error
+	callbacks map[int64]func(event []byte) error
 	sync.Mutex
 	done int32
 }
@@ -44,11 +44,11 @@ func (r *Events) initSubscribeMap(namespace string, eventName string) {
 		r.subscribeMap[namespace] = map[string]*data{}
 	}
 	if _, ok := r.subscribeMap[namespace][eventName]; !ok {
-		r.subscribeMap[namespace][eventName] = &data{callbacks: map[int64]func(ctx []byte, event []byte) error{}}
+		r.subscribeMap[namespace][eventName] = &data{callbacks: map[int64]func(event []byte) error{}}
 	}
 }
 
-func (r *Events) Publish(namespace string, eventName string, ctx []byte, eventData []byte) (err error) {
+func (r *Events) Publish(namespace string, eventName string, eventData []byte) (err error) {
 	go func() {
 		r.subscribeMutex.Lock()
 		r.initSubscribeMap(namespace, eventName)
@@ -59,7 +59,7 @@ func (r *Events) Publish(namespace string, eventName string, ctx []byte, eventDa
 		for _, cb := range tmp.callbacks {
 			// Need new variable cause callback will be run in go routine
 			f := cb
-			go f(ctx, eventData)
+			go f(eventData)
 		}
 		tmp.Unlock()
 	}()
@@ -78,7 +78,7 @@ func (r *Events) Unsubscribe(namespace string, eventName string) {
 	el.Unlock()
 }
 
-func (r *Events) Subscribe(namespace string, eventName string, callback func(ctx, event []byte) error) (cancel pubsub.CancelFunc, err error) {
+func (r *Events) Subscribe(namespace string, eventName string, callback func(event []byte) error) (cancel pubsub.CancelFunc, err error) {
 	r.subscribeMutex.Lock()
 	defer r.subscribeMutex.Unlock()
 	r.initSubscribeMap(namespace, eventName)

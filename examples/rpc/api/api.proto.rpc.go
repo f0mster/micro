@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/interfaces/contextmarshaller"
@@ -13,6 +14,11 @@ import (
 	"github.com/f0mster/micro/server"
 	"sync/atomic"
 )
+
+type DataWithContextApiProtoRpcGo struct {
+	Data []byte `json:"data"`
+	Ctx  []byte `json:"ctx"`
+}
 
 type SessionInternalAPI interface {
 
@@ -99,8 +105,13 @@ func (c *SessionInternalAPIService) WatchInstanceUnregistered(callback func(inst
 	return c.config.Registry.WatchInstanceUnregistered("SessionInternalAPI", callback)
 }
 
-func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, arguments []byte) (r []byte, err error) {
-	pCtx, _, err := h.config.ContextMarshaller.Unmarshal(ctx)
+func (h *SessionInternalAPIService) listenRPC(funcName string, arguments []byte) (r []byte, err error) {
+	d := DataWithContextApiProtoRpcGo{}
+	err = json.Unmarshal(arguments, &d)
+	if err != nil {
+		return nil, err
+	}
+	pCtx, _, err := h.config.ContextMarshaller.Unmarshal(d.Ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +121,7 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, argum
 		switch funcName {
 		case "Connect":
 			arg := ConnectReq{}
-			err = arg.UnmarshalVT(arguments)
+			err = arg.UnmarshalVT(d.Data)
 			if err != nil {
 				return err
 			}
@@ -133,7 +144,7 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, argum
 			return nil
 		case "snake_func_name":
 			arg := SnakeMessage{}
-			err = arg.UnmarshalVT(arguments)
+			err = arg.UnmarshalVT(d.Data)
 			if err != nil {
 				return err
 			}

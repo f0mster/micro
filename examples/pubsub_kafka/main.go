@@ -3,29 +3,38 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"sync"
+	"strconv"
 	"time"
+
+	"github.com/Shopify/sarama"
 
 	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/examples/pubsub/api"
-	"github.com/f0mster/micro/pkg/metadata"
 	pubsub2 "github.com/f0mster/micro/pubsub"
-	events_memory "github.com/f0mster/micro/pubsub/memory"
+	events_kafka "github.com/f0mster/micro/pubsub/kafka"
 	registry_memory "github.com/f0mster/micro/registry/memory"
 	rpc_memory "github.com/f0mster/micro/rpc/memory"
 	"github.com/f0mster/micro/server"
 )
 
 func main() {
+	var err error
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Partitioner = sarama.NewRandomPartitioner
+	config.Producer.Return.Successes = true
+	pubsub, err = events_kafka.New(config, []string{"127.0.0.1:29092"}, "ddd")
+	if err != nil {
+		panic(fmt.Errorf("failed to connect to kafka: %w", err))
+	}
 	cancel := clientSide()
 	serverSide()
-	wg.Wait()
+	time.Sleep(5 * time.Second)
 	cancel()
 }
 
 var rpc = rpc_memory.New(60 * time.Second)
-var pubsub = events_memory.New()
+var config = sarama.NewConfig()
+var pubsub *events_kafka.Events
 var reg = registry_memory.New()
 
 func serverSide() {
@@ -35,11 +44,14 @@ func serverSide() {
 	srv, _ := server.NewServer(serverCfg)
 	serviceSession, _ := api.RegisterSessionInternalAPIServer(&servi, srv)
 	ctx := context.Background()
-	ctx = metadata.NewContext(ctx, metadata.Metadata{"www": "111"})
-	err := serviceSession.PublishConnectEvent(ctx, &api.ConnectEvent{Id: "wqdqwd"})
-	if err != nil {
-		log.Fatal(err)
+
+	for i := 0; i < 1000; i++ {
+		err := serviceSession.PublishConnectEvent(ctx, &api.ConnectEvent{Id: strconv.Itoa(i)})
+		if err != nil {
+			panic(err)
+		}
 	}
+
 }
 
 func clientSide() pubsub2.CancelFunc {
@@ -48,27 +60,17 @@ func clientSide() pubsub2.CancelFunc {
 	// this is a client
 	clientSession, err := api.NewSessionInternalAPIClient(clientCfg)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	wg.Add(1)
 	cancel, err := clientSession.SubscribeConnectEvent(func(context context.Context, event *api.ConnectEvent) error {
-		fmt.Println("connect event happens")
-		meta, ok := metadata.FromContext(context)
-		if !ok {
-			panic("error getting data from context")
-		}
-		fmt.Printf("'%+v'", meta)
-		fmt.Printf("'%+v'", event)
-		wg.Done()
+		fmt.Println("connect event happens" + event.Id)
 		return nil
 	})
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return cancel
 }
-
-var wg sync.WaitGroup
 
 type serv struct {
 	srv *api.SessionInternalAPIService

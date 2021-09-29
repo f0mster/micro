@@ -30,7 +30,6 @@ type responseMsg struct {
 
 type requestMsg struct {
 	FunctionName string
-	Context      []byte
 	Arguments    []byte
 	ResponseTo   chan responseMsg
 }
@@ -52,7 +51,7 @@ func (r *RPCTransport) Close() {
 	r.mutex.Unlock()
 }
 
-func (r *RPCTransport) Call(namespace string, functionName string, context []byte, arguments []byte) (response []byte, err error) {
+func (r *RPCTransport) Call(namespace string, functionName string, arguments []byte) (response []byte, err error) {
 	r.mutex.Lock()
 	ch, ok := r.queues[namespace]
 	if !ok {
@@ -64,7 +63,6 @@ func (r *RPCTransport) Call(namespace string, functionName string, context []byt
 	respCh := make(chan responseMsg, 1)
 	req := requestMsg{
 		FunctionName: functionName,
-		Context:      context,
 		Arguments:    arguments,
 		ResponseTo:   respCh,
 	}
@@ -93,7 +91,7 @@ func (r *RPCTransport) Call(namespace string, functionName string, context []byt
 
 type Handle func(functionName string, context []byte, arguments []byte) (response []byte, err error)
 
-func (r *RPCTransport) Listen(namespace string, onListen func(functionName string, context []byte, arguments []byte) (response []byte, err error)) context.CancelFunc {
+func (r *RPCTransport) Listen(namespace string, onListen func(functionName string, arguments []byte) (response []byte, err error)) context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	r.mutex.Lock()
@@ -116,7 +114,7 @@ func (r *RPCTransport) Listen(namespace string, onListen func(functionName strin
 					// todo: exit goroutine on timeout?
 
 					// todo: how to pass context (for canceling)?
-					resp, err := onListen(req.FunctionName, req.Context, req.Arguments)
+					resp, err := onListen(req.FunctionName, req.Arguments)
 					respMsg := responseMsg{
 						Response: resp,
 						Err:      err,

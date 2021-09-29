@@ -61,7 +61,7 @@ func createFromTemplate(generatedFilePath string, data interface{}, tpl string) 
 						camelCase += strings.ToUpper(string(v))
 						isToUpper = false
 					} else {
-						if v == '_' {
+						if v == '_' || v == '.' {
 							isToUpper = true
 						} else {
 							camelCase += string(v)

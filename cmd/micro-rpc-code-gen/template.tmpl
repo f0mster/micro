@@ -6,24 +6,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
+
 	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/interfaces/contextmarshaller"
 	"github.com/f0mster/micro/pkg/rnd"
 	"github.com/f0mster/micro/pubsub"
 	"github.com/f0mster/micro/registry"
 	"github.com/f0mster/micro/server"
-	"sync/atomic"
 )
 
 type DataWithContext{{$filename}} struct {
-    Data []byte `json:"data"`
-    Ctx []byte `json:"ctx"`
+	Data []byte `json:"data"`
+	Ctx  []byte `json:"ctx"`
 }
 
-{{range $serviceName, $service := .Services}}
+{{- range $serviceName, $service := .Services}}
+
 type {{ToCamelCase $serviceName}} interface {
 	{{- range $index, $rpc := $service.Rpc}}
-	{{ if $rpc.Comments }}
+	{{- if $rpc.Comments }}
 	{{- range $i, $c := $rpc.Comments }}
 	//{{$c}} 
 	{{- end -}}
@@ -31,9 +33,10 @@ type {{ToCamelCase $serviceName}} interface {
 	{{ToCamelCase $rpc.Name}}(ctx context.Context, req *{{$rpc.Request|ToCamelCase}}) (resp *{{$rpc.Response|ToCamelCase}}, err error)
 	{{- end}}
 }
-{{end}}
+{{- end}}
 
 {{- range $serviceName, $service := .Services}}
+
 type {{$serviceName|Title}}Service struct {
 	handler    {{ToCamelCase $serviceName}}
 	config     server.Config
@@ -117,10 +120,10 @@ func (s *{{ToCamelCase $serviceName}}Service) Publish{{ToCamelCase $event}}(ctx 
 
 func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, arguments []byte) (r []byte, err error) {
 	d := DataWithContext{{$filename}}{}
-	err = json.Unmarshal(arguments,&d)
-    if err != nil {
-        return nil, err
-    }
+	err = json.Unmarshal(arguments, &d)
+	if err != nil {
+		return nil, err
+	}
 	pCtx, _, err := h.config.ContextMarshaller.Unmarshal(d.Ctx)
 	if err != nil {
 		return nil, err
@@ -128,7 +131,7 @@ func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, argumen
 
 	callRpc := func(ctx context.Context) error {
 		{{- if eq (len $service.Rpc) 0 }}
-		return  fmt.Errorf("service have no rpcs")
+		return fmt.Errorf("service have no rpcs")
 		{{- else }}
 		switch funcName {
 		{{- range $index, $rpc := $service.Rpc}}
@@ -144,7 +147,7 @@ func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, argumen
 			if err != nil {
 				return err
 			}
-			
+
 			// XXX: avoid nil panic if handler returned <nil, nil>.
 			if resp == nil {
 				resp = new({{$rpc.Response|ToCamelCase}})
@@ -160,7 +163,7 @@ func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, argumen
 			//TODO: not sure about this behavior
 			return fmt.Errorf("call of unknown rpc %s %s", "in service {{$serviceName}} ", funcName)
 		}
-		{{ end }}
+		{{- end }}
 	}
 
 	wrap := h.config.RPCWrapper
@@ -186,8 +189,8 @@ func (h *{{ToCamelCase $serviceName}}Service) listenRPC(funcName string, argumen
 
 type PubSubWrap func(ctx context.Context, serviceName, eventName string, PubSubWrapper func(ctx context.Context) error) error
 type {{$serviceName|Title}}EventsPublisher struct {
-	ps pubsub.PubSub
-	cm contextmarshaller.ContextMarshaller
+	ps      pubsub.PubSub
+	cm      contextmarshaller.ContextMarshaller
 	wrapper PubSubWrap
 }
 
@@ -221,8 +224,8 @@ func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|ToCamelCase}}(ct
 		if err != nil {
 			return fmt.Errorf("can't marshal context data: %w", err)
 		}
-		ec :=DataWithContext{{$filename}}{
-			Ctx: ctxData,
+		ec := DataWithContext{{$filename}}{
+			Ctx:  ctxData,
 			Data: r,
 		}
 		eventData, err := json.Marshal(ec)
@@ -248,8 +251,8 @@ func (s *{{$serviceName|Title}}EventsPublisher) Publish{{$event|ToCamelCase}}(ct
 //
 
 type {{ToCamelCase $serviceName}}Client struct {
-	client			*client.Client
-	block           bool
+	client *client.Client
+	block  bool
 }
 
 func New{{$serviceName|Title}}Client(config client.Config, opt ...ClientOpt) (*{{ToCamelCase $serviceName}}Client, error) {
@@ -290,12 +293,12 @@ func (c *{{ToCamelCase $serviceName}}Client) WatchUnregistered(callback func()) 
 }
 
 {{- range $index, $rpc := $service.Rpc}}
-
-{{ if $rpc.Comments }}
-{{- range $i, $c := $rpc.Comments }}
+{{""}}
+	{{- if $rpc.Comments }}
+		{{- range $i, $c := $rpc.Comments }}
 //{{$c}} 
-{{- end -}}
-{{- end }}
+		{{- end -}}
+	{{- end }}
 func (c *{{ToCamelCase $serviceName}}Client) {{ToCamelCase $rpc.Name}}(ctx context.Context, request *{{$rpc.Request|ToCamelCase}}, callOpts ...client.CallOption) (response *{{$rpc.Response|ToCamelCase}}, err error) {
 	response = &{{$rpc.Response|ToCamelCase}}{}
 	err = c.client.CallWithMarshaller(ctx, "{{$serviceName}}", "{{$rpc.Name}}", request, response, callOpts...)
@@ -316,8 +319,8 @@ func (c *{{ToCamelCase $serviceName}}Client) Unsubscribe{{$event|ToCamelCase}}()
 // Nil error in callback required to stop event retrying, if it supported by pubsub provider
 func (c *{{ToCamelCase $serviceName}}Client) Subscribe{{$event|ToCamelCase}}(callback func(ctx context.Context, event *{{$event|ToCamelCase}}) error) (stop pubsub.CancelFunc, err error) {
 	stop, err = c.client.GetConfig().PubSub.Subscribe("{{$serviceName}}", "{{$event}}", func(event []byte) error {
-	    ec :=DataWithContext{{$filename}}{}
-	    json.Unmarshal(event, &ec)
+		ec := DataWithContext{{$filename}}{}
+		json.Unmarshal(event, &ec)
 		log := c.client.GetConfig().Logger
 		ev := {{$event|ToCamelCase}}{}
 		err := ev.UnmarshalVT(ec.Data)

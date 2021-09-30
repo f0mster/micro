@@ -6,13 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
+
 	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/interfaces/contextmarshaller"
 	"github.com/f0mster/micro/pkg/rnd"
 	"github.com/f0mster/micro/pubsub"
 	"github.com/f0mster/micro/registry"
 	"github.com/f0mster/micro/server"
-	"sync/atomic"
 )
 
 type DataWithContextApiProtoRpcGo struct {

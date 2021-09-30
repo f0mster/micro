@@ -6,13 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
+
 	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/interfaces/contextmarshaller"
 	"github.com/f0mster/micro/pkg/rnd"
 	"github.com/f0mster/micro/pubsub"
 	"github.com/f0mster/micro/registry"
 	"github.com/f0mster/micro/server"
-	"sync/atomic"
 )
 
 type DataWithContextApiProtoRpcGo struct {
@@ -21,12 +22,10 @@ type DataWithContextApiProtoRpcGo struct {
 }
 
 type SessionInternalAPI interface {
-
 	// Connect.
 	//
 	// Do something.
 	Connect(ctx context.Context, req *ConnectReq) (resp *ConnectResp, err error)
-
 	SnakeFuncName(ctx context.Context, req *SnakeMessage) (resp *SnakeMessage, err error)
 }
 
@@ -168,7 +167,6 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, arguments []byte)
 			//TODO: not sure about this behavior
 			return fmt.Errorf("call of unknown rpc %s %s", "in service SessionInternalAPI ", funcName)
 		}
-
 	}
 
 	wrap := h.config.RPCWrapper

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package sessionInternalAPI;
-//option go_package = "github.com/f0mster/micro/qqq";
+package api;
+option go_package = "github.com/f0mster/micro/internal/test/api";
 
 // @event OnConnectEvent, OnDisconnectEvent
 service SessionInternalAPIService {

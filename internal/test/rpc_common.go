@@ -15,7 +15,6 @@ import (
 type testData struct {
 	NameSpace    string
 	FunctionName string
-	Context      string
 	Arguments    string
 	Response     string
 	Error        bool
@@ -45,10 +44,9 @@ func Rpc_Call_Test(rpc rpc.RPC, t *testing.T) {
 		mu.Lock()
 		datas[ns] = map[string]testData{}
 		for j := 0; j < 10; j++ {
-			done[i] = rpc.Listen(ns, func(functionName string, context []byte, arguments []byte) (response []byte, err error) {
+			done[i] = rpc.Listen(ns, func(functionName string, arguments []byte) (response []byte, err error) {
 				mu.Lock()
 				defer mu.Unlock()
-				require.Equal(t, datas[ns][functionName].Context, string(context))
 				require.Equal(t, datas[ns][functionName].Arguments, string(arguments))
 				resp := datas[ns][functionName].Response
 				if datas[ns][functionName].Error {
@@ -69,14 +67,13 @@ func Rpc_Call_Test(rpc rpc.RPC, t *testing.T) {
 			td := testData{
 				NameSpace:    ns,
 				FunctionName: fn,
-				Context:      generateRandomString(20),
 				Arguments:    generateRandomString(22),
 				Response:     generateRandomString(23),
 				Error:        time.Now().UnixNano()%1 == 0,
 			}
 			datas[ns][td.FunctionName] = td
 			go func() {
-				resp, err := rpc.Call(td.NameSpace, td.FunctionName, []byte(td.Context), []byte(td.Arguments))
+				resp, err := rpc.Call(td.NameSpace, td.FunctionName, []byte(td.Arguments))
 				if td.Error {
 					require.Equal(t, td.Response, err.Error(), td)
 					require.Equal(t, []byte(nil), resp)

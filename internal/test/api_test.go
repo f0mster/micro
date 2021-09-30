@@ -3,6 +3,11 @@ package tests
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"strings"
+	"sync"
+	"testing"
+	"time"
 
 	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/internal/testlogger"
@@ -15,12 +20,6 @@ import (
 
 	api "github.com/f0mster/micro/internal/test/api"
 	registry_memory "github.com/f0mster/micro/registry/memory"
-
-	"runtime"
-	"strings"
-	"sync"
-	"testing"
-	"time"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
@@ -355,7 +354,7 @@ func TestServerAfter_BeforeFunctions(t *testing.T) {
 	_, err = api.RegisterSessionInternalAPIServiceServer(&servi, srv)
 	require.NoError(t, err)
 	go func() {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		err = srv.Stop()
 		require.NoError(t, err)
 	}()

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2019. Rendall messenger.
- */
-
-//go:generate protoc -I=. --proto_path=. --gofast_out=. api.proto
-//go:generate rendall-rpc-code-gen -proto=api.proto
-package sessionInternalAPI
+//go:generate protoc --go_opt=paths=source_relative --go-vtproto_opt=features=marshal+unmarshal+size --go-vtproto_opt=paths=source_relative --go_out=. --go-vtproto_out=. ./*.proto
+//go:generate micro-rpc-code-gen -proto=api.proto
+package api

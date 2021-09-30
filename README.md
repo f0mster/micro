@@ -7,14 +7,14 @@
 
 ## Кодогенерация
 
-Установка: вызывать один из предложенных вариантов в `Makefile (linux, win, darwin)`
+Установка: `go install github.com/f0mster/micro/cmd/...`
 
 Пример для файла: `api.proto`
 
 Перед запуском выполнить
 ```protoc -I=. --proto_path=. --go_out=. --go-vtproto_out=. api.proto```
 После чего выполнить
-```rendall-rpc-code-gen -proto=api.proto```
+```micro-rpc-code-gen -proto=api.proto```
 
 ### Функции
 

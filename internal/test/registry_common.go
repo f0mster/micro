@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/f0mster/micro/registry"
+	"github.com/f0mster/micro/pkg/registry"
 )
 
 /*

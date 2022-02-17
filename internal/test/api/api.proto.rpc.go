@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/f0mster/micro/client"
-	"github.com/f0mster/micro/interfaces/contextmarshaller"
+	contextmarshaller2 "github.com/f0mster/micro/pkg/interfaces/contextmarshaller"
+	"github.com/f0mster/micro/pkg/server"
+
+	"github.com/f0mster/micro/pkg/client"
+	"github.com/f0mster/micro/pkg/pubsub"
+	"github.com/f0mster/micro/pkg/registry"
 	"github.com/f0mster/micro/pkg/rnd"
-	"github.com/f0mster/micro/pubsub"
-	"github.com/f0mster/micro/registry"
-	"github.com/f0mster/micro/server"
 )
 
 type DataWithContextApiProtoRpcGo struct {
@@ -196,18 +197,18 @@ func (h *SessionInternalAPIServiceService) listenRPC(funcName string, arguments 
 type PubSubWrap func(ctx context.Context, serviceName, eventName string, PubSubWrapper func(ctx context.Context) error) error
 type SessionInternalAPIServiceEventsPublisher struct {
 	ps      pubsub.PubSub
-	cm      contextmarshaller.ContextMarshaller
+	cm      contextmarshaller2.ContextMarshaller
 	wrapper PubSubWrap
 }
 
 func NewSessionInternalAPIServiceEventsPublisher(ps pubsub.PubSub) *SessionInternalAPIServiceEventsPublisher {
 	return &SessionInternalAPIServiceEventsPublisher{
 		ps: ps,
-		cm: &contextmarshaller.DefaultCtxMarshaller{},
+		cm: &contextmarshaller2.DefaultCtxMarshaller{},
 	}
 }
 
-func (s *SessionInternalAPIServiceEventsPublisher) SetContextMarshaller(cm contextmarshaller.ContextMarshaller) {
+func (s *SessionInternalAPIServiceEventsPublisher) SetContextMarshaller(cm contextmarshaller2.ContextMarshaller) {
 	s.cm = cm
 }
 
@@ -236,7 +237,9 @@ func (s *SessionInternalAPIServiceEventsPublisher) PublishOnConnectEvent(ctx con
 		if err != nil {
 			return fmt.Errorf("can't marshal json data: %w", err)
 		}
+
 		err = s.ps.Publish("SessionInternalAPIService", "OnConnectEvent", eventData)
+
 		if err != nil {
 			return fmt.Errorf("error while publishing error: %w", err)
 		}
@@ -270,7 +273,9 @@ func (s *SessionInternalAPIServiceEventsPublisher) PublishOnDisconnectEvent(ctx 
 		if err != nil {
 			return fmt.Errorf("can't marshal json data: %w", err)
 		}
+
 		err = s.ps.Publish("SessionInternalAPIService", "OnDisconnectEvent", eventData)
+
 		if err != nil {
 			return fmt.Errorf("error while publishing error: %w", err)
 		}
@@ -350,12 +355,14 @@ func (c *SessionInternalAPIServiceClient) Disconnect(ctx context.Context, reques
 }
 
 func (c *SessionInternalAPIServiceClient) UnsubscribeOnConnectEvent() {
-	c.client.Unsubscribe("SessionInternalAPIService", "OnConnectEvent")
+	c.client.GetConfig().PubSub.Unsubscribe("SessionInternalAPIService", "OnConnectEvent")
 }
 
 // Nil error in callback required to stop event retrying, if it supported by pubsub provider
 func (c *SessionInternalAPIServiceClient) SubscribeOnConnectEvent(callback func(ctx context.Context, event *OnConnectEvent) error) (stop pubsub.CancelFunc, err error) {
+
 	stop, err = c.client.GetConfig().PubSub.Subscribe("SessionInternalAPIService", "OnConnectEvent", func(event []byte) error {
+
 		ec := DataWithContextApiProtoRpcGo{}
 		json.Unmarshal(event, &ec)
 		log := c.client.GetConfig().Logger
@@ -394,12 +401,14 @@ func (c *SessionInternalAPIServiceClient) SubscribeOnConnectEvent(callback func(
 }
 
 func (c *SessionInternalAPIServiceClient) UnsubscribeOnDisconnectEvent() {
-	c.client.Unsubscribe("SessionInternalAPIService", "OnDisconnectEvent")
+	c.client.GetConfig().PubSub.Unsubscribe("SessionInternalAPIService", "OnDisconnectEvent")
 }
 
 // Nil error in callback required to stop event retrying, if it supported by pubsub provider
 func (c *SessionInternalAPIServiceClient) SubscribeOnDisconnectEvent(callback func(ctx context.Context, event *OnDisconnectEvent) error) (stop pubsub.CancelFunc, err error) {
+
 	stop, err = c.client.GetConfig().PubSub.Subscribe("SessionInternalAPIService", "OnDisconnectEvent", func(event []byte) error {
+
 		ec := DataWithContextApiProtoRpcGo{}
 		json.Unmarshal(event, &ec)
 		log := c.client.GetConfig().Logger

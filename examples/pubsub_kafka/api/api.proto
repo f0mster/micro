@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package api;
 
-option go_package = "github.com/f0mster/micro/examples/pubsub/api";
+option go_package = "xdevteam.com/a8r/proto-tools/micro/examples/pubsub/api";
 
-// @event ConnectEvent, snake_case_event
+// @event ConnectEvent, snake_case_event, EventWithTopic:some.topic.name
 service SessionInternalAPI {
 }
 
@@ -13,3 +13,5 @@ message ConnectEvent {
 }
 
 message snake_case_event {}
+
+message EventWithTopic {}

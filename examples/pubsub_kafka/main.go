@@ -4,17 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
 
-	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/examples/pubsub/api"
-	pubsub2 "github.com/f0mster/micro/pubsub"
-	events_kafka "github.com/f0mster/micro/pubsub/kafka"
-	registry_memory "github.com/f0mster/micro/registry/memory"
-	rpc_memory "github.com/f0mster/micro/rpc/memory"
-	"github.com/f0mster/micro/server"
+	pkgpubsub "github.com/f0mster/micro/pkg/pubsub"
+	events_kafka "github.com/f0mster/micro/pkg/pubsub/kafka"
 )
 
 func main() {
@@ -28,50 +25,37 @@ func main() {
 	}
 	cancel := clientSide()
 	serverSide()
-	time.Sleep(5 * time.Second)
+	wg.Wait()
+	time.Sleep(1 * time.Second)
 	cancel()
 }
 
-var rpc = rpc_memory.New(60 * time.Second)
 var config = sarama.NewConfig()
 var pubsub *events_kafka.Events
-var reg = registry_memory.New()
+var wg sync.WaitGroup
 
 func serverSide() {
 	// structure that can handle server functions
-	servi := serv{}
-	serverCfg := server.Config{Registry: reg, RPC: rpc, PubSub: pubsub}
-	srv, _ := server.NewServer(serverCfg)
-	serviceSession, _ := api.RegisterSessionInternalAPIServer(&servi, srv)
 	ctx := context.Background()
-
+	publisher := api.NewSessionInternalAPIEventsPublisher(pubsub)
 	for i := 0; i < 1000; i++ {
-		err := serviceSession.PublishConnectEvent(ctx, &api.ConnectEvent{Id: strconv.Itoa(i)})
+		err := publisher.PublishConnectEvent(ctx, &api.ConnectEvent{Id: strconv.Itoa(i)})
 		if err != nil {
 			panic(err)
 		}
 	}
-
 }
 
-func clientSide() pubsub2.CancelFunc {
-	clientCfg := client.Config{Registry: reg, RPC: rpc, PubSub: pubsub}
-
-	// this is a client
-	clientSession, err := api.NewSessionInternalAPIClient(clientCfg)
-	if err != nil {
-		panic(err)
-	}
-	cancel, err := clientSession.SubscribeConnectEvent(func(context context.Context, event *api.ConnectEvent) error {
+func clientSide() pkgpubsub.CancelFunc {
+	sub := api.NewSessionInternalAPIEventsSubscriber(pubsub)
+	wg.Add(1)
+	cancel, err := sub.SubscribeConnectEvent(func(context context.Context, event *api.ConnectEvent) error {
 		fmt.Println("connect event happens" + event.Id)
+		wg.Done()
 		return nil
 	})
 	if err != nil {
 		panic(err)
 	}
 	return cancel
-}
-
-type serv struct {
-	srv *api.SessionInternalAPIService
 }

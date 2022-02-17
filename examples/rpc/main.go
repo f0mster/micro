@@ -7,14 +7,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/f0mster/micro/client"
+	rpc_memory "github.com/f0mster/micro/pkg/rpc/memory"
+	"github.com/f0mster/micro/pkg/server"
+
+	"github.com/f0mster/micro/pkg/client"
 	"github.com/f0mster/micro/pkg/metadata"
-	events_memory "github.com/f0mster/micro/pubsub/memory"
-	rpc_memory "github.com/f0mster/micro/rpc/memory"
-	"github.com/f0mster/micro/server"
+	events_memory "github.com/f0mster/micro/pkg/pubsub/memory"
 
 	"github.com/f0mster/micro/examples/rpc/api"
-	registry_memory "github.com/f0mster/micro/registry/memory"
+	registry_memory "github.com/f0mster/micro/pkg/registry/memory"
 )
 
 var rpc = rpc_memory.New(60 * time.Second)

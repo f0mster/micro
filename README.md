@@ -43,12 +43,35 @@ service SessionInternalAPIService {
  */
 service SessionInternalAPIService {
 }
+
+message OnConnect {
+    string id = 1;
+}
+message OnDisconnect {}
+message OnUserOnline {}
+message OnUserOffline {}
+message UserChanged {
+    string id = 1;
+    string changed_field = 2;
+}
 ```
 
 В результате кодогенерации в client появится функции `SubscribeOnConnect`, `SubscribeOnDisconnect`
 , `SubscribeOnUserOnline`, `SubscribeOnUserOffline`, `SubscribeUserChanged`
 В сервере появится функции `PublishOnConnect`, `PublishOnDisconnect`, `PublishOnUserOnline`, `PublishOnUserOffline`
 , `PublishUserChanged`
+
+### Custom topics for events
+
+If you need to set custom topic for event you should add `:your_topic_name` after message name. 
+```
+// @event OnUserOnline:my.awesome.topic, OnUserOffline:another.topic
+service SessionInternalAPIService {
+}
+message OnUserOnline {}
+message OnUserOffline {}
+```
+
 
 ## Использование
 

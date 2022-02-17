@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/f0mster/micro/client"
-	"github.com/f0mster/micro/interfaces/contextmarshaller"
+	"github.com/f0mster/micro/pkg/client"
+	"github.com/f0mster/micro/pkg/interfaces/contextmarshaller"
+	"github.com/f0mster/micro/pkg/interfaces/logger"
+	"github.com/f0mster/micro/pkg/pubsub"
+	"github.com/f0mster/micro/pkg/registry"
 	"github.com/f0mster/micro/pkg/rnd"
-	"github.com/f0mster/micro/pubsub"
-	"github.com/f0mster/micro/registry"
-	"github.com/f0mster/micro/server"
+	"github.com/f0mster/micro/pkg/server"
 )
 
 type DataWithContextApiProtoRpcGo struct {
@@ -184,7 +185,9 @@ func (s *SessionInternalAPIEventsPublisher) PublishConnectEvent(ctx context.Cont
 		if err != nil {
 			return fmt.Errorf("can't marshal json data: %w", err)
 		}
+
 		err = s.ps.Publish("SessionInternalAPI", "ConnectEvent", eventData)
+
 		if err != nil {
 			return fmt.Errorf("error while publishing error: %w", err)
 		}
@@ -218,7 +221,9 @@ func (s *SessionInternalAPIEventsPublisher) PublishSnakeCaseEvent(ctx context.Co
 		if err != nil {
 			return fmt.Errorf("can't marshal json data: %w", err)
 		}
+
 		err = s.ps.Publish("SessionInternalAPI", "snake_case_event", eventData)
+
 		if err != nil {
 			return fmt.Errorf("error while publishing error: %w", err)
 		}
@@ -236,8 +241,9 @@ func (s *SessionInternalAPIEventsPublisher) PublishSnakeCaseEvent(ctx context.Co
 //
 
 type SessionInternalAPIClient struct {
-	client *client.Client
-	block  bool
+	client     *client.Client
+	block      bool
+	subscriber *SessionInternalAPIEventsSubscriber
 }
 
 func NewSessionInternalAPIClient(config client.Config, opt ...ClientOpt) (*SessionInternalAPIClient, error) {
@@ -246,8 +252,13 @@ func NewSessionInternalAPIClient(config client.Config, opt ...ClientOpt) (*Sessi
 		return nil, err
 	}
 	cli := &SessionInternalAPIClient{
-		client: cClient,
+		client:     cClient,
+		subscriber: NewSessionInternalAPIEventsSubscriber(config.PubSub),
 	}
+	cli.subscriber.SetLogger(config.Logger)
+	cli.subscriber.SetWrapper(config.PubSubWrapper)
+	cli.subscriber.SetContextMarshaller(config.ContextMarshaller)
+
 	for _, o := range opt {
 		o(cli)
 	}
@@ -278,15 +289,62 @@ func (c *SessionInternalAPIClient) WatchUnregistered(callback func()) registry.C
 }
 
 func (c *SessionInternalAPIClient) UnsubscribeConnectEvent() {
-	c.client.Unsubscribe("SessionInternalAPI", "ConnectEvent")
+	c.subscriber.UnsubscribeConnectEvent()
+}
+func (c *SessionInternalAPIClient) SubscribeConnectEvent(callback func(ctx context.Context, event *ConnectEvent) error) (stop pubsub.CancelFunc, err error) {
+	return c.subscriber.SubscribeConnectEvent(callback)
+}
+
+func (c *SessionInternalAPIClient) UnsubscribeSnakeCaseEvent() {
+	c.subscriber.UnsubscribeSnakeCaseEvent()
+}
+func (c *SessionInternalAPIClient) SubscribeSnakeCaseEvent(callback func(ctx context.Context, event *SnakeCaseEvent) error) (stop pubsub.CancelFunc, err error) {
+	return c.subscriber.SubscribeSnakeCaseEvent(callback)
+}
+
+//
+// Events Subscriber
+//
+
+type SessionInternalAPIEventsSubscriber struct {
+	ps      pubsub.PubSub
+	cm      contextmarshaller.ContextMarshaller
+	wrapper PubSubWrap
+	logger  logger.Logger
+}
+
+func NewSessionInternalAPIEventsSubscriber(ps pubsub.PubSub) *SessionInternalAPIEventsSubscriber {
+	return &SessionInternalAPIEventsSubscriber{
+		ps:     ps,
+		cm:     &contextmarshaller.DefaultCtxMarshaller{},
+		logger: &logger.DefaultLogger{},
+	}
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetContextMarshaller(cm contextmarshaller.ContextMarshaller) {
+	s.cm = cm
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetWrapper(PubSubWrapper func(ctx context.Context, ServiceName, EventName string, PubSubCall func(ctx context.Context) error) error) {
+	s.wrapper = PubSubWrapper
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetLogger(log logger.Logger) {
+	s.logger = log
+}
+
+func (c *SessionInternalAPIEventsSubscriber) UnsubscribeConnectEvent() {
+	c.ps.Unsubscribe("SessionInternalAPI", "ConnectEvent")
 }
 
 // Nil error in callback required to stop event retrying, if it supported by pubsub provider
-func (c *SessionInternalAPIClient) SubscribeConnectEvent(callback func(ctx context.Context, event *ConnectEvent) error) (stop pubsub.CancelFunc, err error) {
-	stop, err = c.client.GetConfig().PubSub.Subscribe("SessionInternalAPI", "ConnectEvent", func(event []byte) error {
+func (c *SessionInternalAPIEventsSubscriber) SubscribeConnectEvent(callback func(ctx context.Context, event *ConnectEvent) error) (stop pubsub.CancelFunc, err error) {
+
+	stop, err = c.ps.Subscribe("SessionInternalAPI", "ConnectEvent", func(event []byte) error {
+
 		ec := DataWithContextApiProtoRpcGo{}
 		json.Unmarshal(event, &ec)
-		log := c.client.GetConfig().Logger
+		log := c.logger
 		ev := ConnectEvent{}
 		err := ev.UnmarshalVT(ec.Data)
 		log.Debug("got event", "SessionInternalAPI", "ConnectEvent")
@@ -294,12 +352,12 @@ func (c *SessionInternalAPIClient) SubscribeConnectEvent(callback func(ctx conte
 			log.Error(err, "error while unmarshalling event", "SessionInternalAPI", "ConnectEvent", string(event))
 			return fmt.Errorf("error while unmarshalling event: %w", err)
 		}
-		ctx, _, err := c.client.GetConfig().ContextMarshaller.Unmarshal(ec.Ctx)
+		ctx, _, err := c.cm.Unmarshal(ec.Ctx)
 		if err != nil {
 			log.Error(err, "error while unmarshalling context data", "SessionInternalAPI", "ConnectEvent", string(ec.Ctx))
 			return fmt.Errorf("error while unmarshalling context data: %w", err)
 		}
-		wrap := c.client.GetConfig().PubSubWrapper
+		wrap := c.wrapper
 		if wrap != nil {
 			wrapCB := func(ctx context.Context) error {
 				err = callback(ctx, &ev)
@@ -321,16 +379,18 @@ func (c *SessionInternalAPIClient) SubscribeConnectEvent(callback func(ctx conte
 	return stop, err
 }
 
-func (c *SessionInternalAPIClient) UnsubscribeSnakeCaseEvent() {
-	c.client.Unsubscribe("SessionInternalAPI", "snake_case_event")
+func (c *SessionInternalAPIEventsSubscriber) UnsubscribeSnakeCaseEvent() {
+	c.ps.Unsubscribe("SessionInternalAPI", "snake_case_event")
 }
 
 // Nil error in callback required to stop event retrying, if it supported by pubsub provider
-func (c *SessionInternalAPIClient) SubscribeSnakeCaseEvent(callback func(ctx context.Context, event *SnakeCaseEvent) error) (stop pubsub.CancelFunc, err error) {
-	stop, err = c.client.GetConfig().PubSub.Subscribe("SessionInternalAPI", "snake_case_event", func(event []byte) error {
+func (c *SessionInternalAPIEventsSubscriber) SubscribeSnakeCaseEvent(callback func(ctx context.Context, event *SnakeCaseEvent) error) (stop pubsub.CancelFunc, err error) {
+
+	stop, err = c.ps.Subscribe("SessionInternalAPI", "snake_case_event", func(event []byte) error {
+
 		ec := DataWithContextApiProtoRpcGo{}
 		json.Unmarshal(event, &ec)
-		log := c.client.GetConfig().Logger
+		log := c.logger
 		ev := SnakeCaseEvent{}
 		err := ev.UnmarshalVT(ec.Data)
 		log.Debug("got event", "SessionInternalAPI", "snake_case_event")
@@ -338,12 +398,12 @@ func (c *SessionInternalAPIClient) SubscribeSnakeCaseEvent(callback func(ctx con
 			log.Error(err, "error while unmarshalling event", "SessionInternalAPI", "snake_case_event", string(event))
 			return fmt.Errorf("error while unmarshalling event: %w", err)
 		}
-		ctx, _, err := c.client.GetConfig().ContextMarshaller.Unmarshal(ec.Ctx)
+		ctx, _, err := c.cm.Unmarshal(ec.Ctx)
 		if err != nil {
 			log.Error(err, "error while unmarshalling context data", "SessionInternalAPI", "snake_case_event", string(ec.Ctx))
 			return fmt.Errorf("error while unmarshalling context data: %w", err)
 		}
-		wrap := c.client.GetConfig().PubSubWrapper
+		wrap := c.wrapper
 		if wrap != nil {
 			wrapCB := func(ctx context.Context) error {
 				err = callback(ctx, &ev)

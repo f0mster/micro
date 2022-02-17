@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/f0mster/micro/pkg/rnd"
-	"github.com/f0mster/micro/rpc"
+	"github.com/f0mster/micro/pkg/rpc"
 )
 
 type testData struct {

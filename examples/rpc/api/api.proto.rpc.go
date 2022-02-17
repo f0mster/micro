@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/f0mster/micro/client"
-	"github.com/f0mster/micro/interfaces/contextmarshaller"
+	"github.com/f0mster/micro/pkg/client"
+	"github.com/f0mster/micro/pkg/interfaces/contextmarshaller"
+	"github.com/f0mster/micro/pkg/interfaces/logger"
+	"github.com/f0mster/micro/pkg/pubsub"
+	"github.com/f0mster/micro/pkg/registry"
 	"github.com/f0mster/micro/pkg/rnd"
-	"github.com/f0mster/micro/pubsub"
-	"github.com/f0mster/micro/registry"
-	"github.com/f0mster/micro/server"
+	"github.com/f0mster/micro/pkg/server"
 )
 
 type DataWithContextApiProtoRpcGo struct {
@@ -217,8 +218,9 @@ func (s *SessionInternalAPIEventsPublisher) SetWrapper(PubSubWrapper func(ctx co
 //
 
 type SessionInternalAPIClient struct {
-	client *client.Client
-	block  bool
+	client     *client.Client
+	block      bool
+	subscriber *SessionInternalAPIEventsSubscriber
 }
 
 func NewSessionInternalAPIClient(config client.Config, opt ...ClientOpt) (*SessionInternalAPIClient, error) {
@@ -227,8 +229,13 @@ func NewSessionInternalAPIClient(config client.Config, opt ...ClientOpt) (*Sessi
 		return nil, err
 	}
 	cli := &SessionInternalAPIClient{
-		client: cClient,
+		client:     cClient,
+		subscriber: NewSessionInternalAPIEventsSubscriber(config.PubSub),
 	}
+	cli.subscriber.SetLogger(config.Logger)
+	cli.subscriber.SetWrapper(config.PubSubWrapper)
+	cli.subscriber.SetContextMarshaller(config.ContextMarshaller)
+
 	for _, o := range opt {
 		o(cli)
 	}
@@ -279,4 +286,35 @@ func (c *SessionInternalAPIClient) SnakeFuncName(ctx context.Context, request *S
 	}
 
 	return response, nil
+}
+
+//
+// Events Subscriber
+//
+
+type SessionInternalAPIEventsSubscriber struct {
+	ps      pubsub.PubSub
+	cm      contextmarshaller.ContextMarshaller
+	wrapper PubSubWrap
+	logger  logger.Logger
+}
+
+func NewSessionInternalAPIEventsSubscriber(ps pubsub.PubSub) *SessionInternalAPIEventsSubscriber {
+	return &SessionInternalAPIEventsSubscriber{
+		ps:     ps,
+		cm:     &contextmarshaller.DefaultCtxMarshaller{},
+		logger: &logger.DefaultLogger{},
+	}
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetContextMarshaller(cm contextmarshaller.ContextMarshaller) {
+	s.cm = cm
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetWrapper(PubSubWrapper func(ctx context.Context, ServiceName, EventName string, PubSubCall func(ctx context.Context) error) error) {
+	s.wrapper = PubSubWrapper
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetLogger(log logger.Logger) {
+	s.logger = log
 }

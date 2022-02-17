@@ -3,19 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-
-	"github.com/f0mster/micro/client"
-	"github.com/f0mster/micro/internal/testlogger"
-	"github.com/f0mster/micro/pkg/metadata"
-	"github.com/f0mster/micro/pubsub"
-	pubsub_memory "github.com/f0mster/micro/pubsub/memory"
-	"github.com/f0mster/micro/registry"
-	rpc_memory "github.com/f0mster/micro/rpc/memory"
-	"github.com/f0mster/micro/server"
-
-	api "github.com/f0mster/micro/internal/test/api"
-	registry_memory "github.com/f0mster/micro/registry/memory"
-
 	"runtime"
 	"strings"
 	"sync"
@@ -23,6 +10,20 @@ import (
 	"time"
 
 	"github.com/ory/dockertest/v3"
+
+	rpc_memory "github.com/f0mster/micro/pkg/rpc/memory"
+	"github.com/f0mster/micro/pkg/server"
+
+	"github.com/f0mster/micro/internal/testlogger"
+	"github.com/f0mster/micro/pkg/client"
+	"github.com/f0mster/micro/pkg/metadata"
+	"github.com/f0mster/micro/pkg/pubsub"
+	pubsub_memory "github.com/f0mster/micro/pkg/pubsub/memory"
+	"github.com/f0mster/micro/pkg/registry"
+
+	"github.com/f0mster/micro/internal/test/api"
+	registry_memory "github.com/f0mster/micro/pkg/registry/memory"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -355,7 +356,7 @@ func TestServerAfter_BeforeFunctions(t *testing.T) {
 	_, err = api.RegisterSessionInternalAPIServiceServer(&servi, srv)
 	require.NoError(t, err)
 	go func() {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		err = srv.Stop()
 		require.NoError(t, err)
 	}()

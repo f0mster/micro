@@ -5,55 +5,35 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"runtime"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/f0mster/micro/internal/gererator"
 )
 
 const appTitle = "RPC code generator"
 
-var version = "v0.1.5"
+var version = "v0.2.0"
 
 func main() {
 	fmt.Println(appTitle)
 	fmt.Println("Version:", version)
 
 	fDebug := flag.Bool("d", false, "debug mode")
-	fVerboseDebug := flag.Bool("dd", false, "more verbose debug mode")
 	fProto := flag.String("proto", "", "path to proto file")
 	foutPath := flag.String("out", "", "output path")
 	flag.Parse()
-
-	if *fDebug || *fVerboseDebug {
-		log.Info("debug mode")
-		log.SetLevel(log.DebugLevel)
-
-		if *fVerboseDebug {
-			log.SetReportCaller(true)
-			formatter := &log.TextFormatter{
-				CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-					return fmt.Sprintf("%s()", f.Function),
-						fmt.Sprintf(" %s:%d", path.Base(f.File), f.Line)
-				},
-			}
-			log.SetFormatter(formatter)
-		}
-	} else {
-		log.SetLevel(log.InfoLevel)
-	}
-
+	gererator.Log.IsDebugEnabled = *fDebug
 	if *fProto == "" {
-		log.Warn("-proto flag must be used")
+		gererator.Log.Warn("-proto flag must be used")
 		os.Exit(1)
 	}
 	out := path.Base(*fProto) + ".rpc.go"
 	if *foutPath == "" {
 		out = path.Join(*foutPath, out)
 	}
-	err := Generate(*fProto, out)
+	err := gererator.Generate(*fProto, out)
 	if err != nil {
-		log.Errorf("gen error: %s", err)
+		gererator.Log.Errorf("gen error: %s", err)
 	}
 
-	log.Println("done.")
+	gererator.Log.Println("done.")
 }

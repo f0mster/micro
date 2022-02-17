@@ -20,7 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ConnectReq struct {
+type ConnectEvent struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -28,8 +28,8 @@ type ConnectReq struct {
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
-func (x *ConnectReq) Reset() {
-	*x = ConnectReq{}
+func (x *ConnectEvent) Reset() {
+	*x = ConnectEvent{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -37,13 +37,13 @@ func (x *ConnectReq) Reset() {
 	}
 }
 
-func (x *ConnectReq) String() string {
+func (x *ConnectEvent) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConnectReq) ProtoMessage() {}
+func (*ConnectEvent) ProtoMessage() {}
 
-func (x *ConnectReq) ProtoReflect() protoreflect.Message {
+func (x *ConnectEvent) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,28 +55,26 @@ func (x *ConnectReq) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConnectReq.ProtoReflect.Descriptor instead.
-func (*ConnectReq) Descriptor() ([]byte, []int) {
+// Deprecated: Use ConnectEvent.ProtoReflect.Descriptor instead.
+func (*ConnectEvent) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ConnectReq) GetId() string {
+func (x *ConnectEvent) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-type ConnectResp struct {
+type SnakeCaseEvent struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
-	Value int64 `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (x *ConnectResp) Reset() {
-	*x = ConnectResp{}
+func (x *SnakeCaseEvent) Reset() {
+	*x = SnakeCaseEvent{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -84,13 +82,13 @@ func (x *ConnectResp) Reset() {
 	}
 }
 
-func (x *ConnectResp) String() string {
+func (x *SnakeCaseEvent) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConnectResp) ProtoMessage() {}
+func (*SnakeCaseEvent) ProtoMessage() {}
 
-func (x *ConnectResp) ProtoReflect() protoreflect.Message {
+func (x *SnakeCaseEvent) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -102,26 +100,19 @@ func (x *ConnectResp) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConnectResp.ProtoReflect.Descriptor instead.
-func (*ConnectResp) Descriptor() ([]byte, []int) {
+// Deprecated: Use SnakeCaseEvent.ProtoReflect.Descriptor instead.
+func (*SnakeCaseEvent) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ConnectResp) GetValue() int64 {
-	if x != nil {
-		return x.Value
-	}
-	return 0
-}
-
-type SnakeMessage struct {
+type EventWithTopic struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *SnakeMessage) Reset() {
-	*x = SnakeMessage{}
+func (x *EventWithTopic) Reset() {
+	*x = EventWithTopic{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -129,13 +120,13 @@ func (x *SnakeMessage) Reset() {
 	}
 }
 
-func (x *SnakeMessage) String() string {
+func (x *EventWithTopic) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SnakeMessage) ProtoMessage() {}
+func (*EventWithTopic) ProtoMessage() {}
 
-func (x *SnakeMessage) ProtoReflect() protoreflect.Message {
+func (x *EventWithTopic) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -147,8 +138,8 @@ func (x *SnakeMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SnakeMessage.ProtoReflect.Descriptor instead.
-func (*SnakeMessage) Descriptor() ([]byte, []int) {
+// Deprecated: Use EventWithTopic.ProtoReflect.Descriptor instead.
+func (*EventWithTopic) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{2}
 }
 
@@ -156,24 +147,16 @@ var File_api_proto protoreflect.FileDescriptor
 
 var file_api_proto_rawDesc = []byte{
 	0x0a, 0x09, 0x61, 0x70, 0x69, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x03, 0x61, 0x70, 0x69,
-	0x22, 0x1c, 0x0a, 0x0a, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x52, 0x65, 0x71, 0x12, 0x0e,
-	0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x23,
-	0x0a, 0x0b, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x14, 0x0a,
-	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x76, 0x61,
-	0x6c, 0x75, 0x65, 0x22, 0x0f, 0x0a, 0x0d, 0x73, 0x6e, 0x61, 0x6b, 0x65, 0x5f, 0x6d, 0x65, 0x73,
-	0x73, 0x61, 0x67, 0x65, 0x32, 0x7d, 0x0a, 0x12, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x49,
-	0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x41, 0x50, 0x49, 0x12, 0x2c, 0x0a, 0x07, 0x43, 0x6f,
-	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x12, 0x0f, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43, 0x6f, 0x6e, 0x6e,
-	0x65, 0x63, 0x74, 0x52, 0x65, 0x71, 0x1a, 0x10, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43, 0x6f, 0x6e,
-	0x6e, 0x65, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x39, 0x0a, 0x0f, 0x73, 0x6e, 0x61, 0x6b,
-	0x65, 0x5f, 0x66, 0x75, 0x6e, 0x63, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x2e, 0x61, 0x70,
-	0x69, 0x2e, 0x73, 0x6e, 0x61, 0x6b, 0x65, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x1a,
-	0x12, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x73, 0x6e, 0x61, 0x6b, 0x65, 0x5f, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x42, 0x35, 0x5a, 0x33, 0x78, 0x64, 0x65, 0x76, 0x74, 0x65, 0x61, 0x6d, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x61, 0x38, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2d, 0x74, 0x6f,
-	0x6f, 0x6c, 0x73, 0x2f, 0x6d, 0x69, 0x63, 0x72, 0x6f, 0x2f, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c,
-	0x65, 0x73, 0x2f, 0x72, 0x70, 0x63, 0x2f, 0x61, 0x70, 0x69, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x22, 0x1e, 0x0a, 0x0c, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74,
+	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64,
+	0x22, 0x12, 0x0a, 0x10, 0x73, 0x6e, 0x61, 0x6b, 0x65, 0x5f, 0x63, 0x61, 0x73, 0x65, 0x5f, 0x65,
+	0x76, 0x65, 0x6e, 0x74, 0x22, 0x10, 0x0a, 0x0e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x57, 0x69, 0x74,
+	0x68, 0x54, 0x6f, 0x70, 0x69, 0x63, 0x32, 0x14, 0x0a, 0x12, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x41, 0x50, 0x49, 0x42, 0x38, 0x5a, 0x36,
+	0x78, 0x64, 0x65, 0x76, 0x74, 0x65, 0x61, 0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x61, 0x38, 0x72,
+	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2d, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x2f, 0x6d, 0x69, 0x63,
+	0x72, 0x6f, 0x2f, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x73, 0x2f, 0x70, 0x75, 0x62, 0x73,
+	0x75, 0x62, 0x2f, 0x61, 0x70, 0x69, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -190,17 +173,13 @@ func file_api_proto_rawDescGZIP() []byte {
 
 var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_api_proto_goTypes = []interface{}{
-	(*ConnectReq)(nil),   // 0: api.ConnectReq
-	(*ConnectResp)(nil),  // 1: api.ConnectResp
-	(*SnakeMessage)(nil), // 2: api.snake_message
+	(*ConnectEvent)(nil),   // 0: api.ConnectEvent
+	(*SnakeCaseEvent)(nil), // 1: api.snake_case_event
+	(*EventWithTopic)(nil), // 2: api.EventWithTopic
 }
 var file_api_proto_depIdxs = []int32{
-	0, // 0: api.SessionInternalAPI.Connect:input_type -> api.ConnectReq
-	2, // 1: api.SessionInternalAPI.snake_func_name:input_type -> api.snake_message
-	1, // 2: api.SessionInternalAPI.Connect:output_type -> api.ConnectResp
-	2, // 3: api.SessionInternalAPI.snake_func_name:output_type -> api.snake_message
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -213,7 +192,7 @@ func file_api_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_api_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ConnectReq); i {
+			switch v := v.(*ConnectEvent); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -225,7 +204,7 @@ func file_api_proto_init() {
 			}
 		}
 		file_api_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ConnectResp); i {
+			switch v := v.(*SnakeCaseEvent); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -237,7 +216,7 @@ func file_api_proto_init() {
 			}
 		}
 		file_api_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SnakeMessage); i {
+			switch v := v.(*EventWithTopic); i {
 			case 0:
 				return &v.state
 			case 1:

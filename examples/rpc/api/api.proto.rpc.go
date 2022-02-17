@@ -4,23 +4,29 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/f0mster/micro/client"
-	"github.com/f0mster/micro/interfaces/contextmarshaller"
-	"github.com/f0mster/micro/pkg/rnd"
-	"github.com/f0mster/micro/pubsub"
-	"github.com/f0mster/micro/registry"
-	"github.com/f0mster/micro/server"
 	"sync/atomic"
+
+	"github.com/f0mster/micro/pkg/client"
+	"github.com/f0mster/micro/pkg/interfaces/contextmarshaller"
+	"github.com/f0mster/micro/pkg/interfaces/logger"
+	"github.com/f0mster/micro/pkg/pubsub"
+	"github.com/f0mster/micro/pkg/registry"
+	"github.com/f0mster/micro/pkg/rnd"
+	"github.com/f0mster/micro/pkg/server"
 )
 
-type SessionInternalAPI interface {
+type DataWithContextApiProtoRpcGo struct {
+	Data []byte `json:"data"`
+	Ctx  []byte `json:"ctx"`
+}
 
+type SessionInternalAPI interface {
 	// Connect.
 	//
 	// Do something.
 	Connect(ctx context.Context, req *ConnectReq) (resp *ConnectResp, err error)
-
 	SnakeFuncName(ctx context.Context, req *SnakeMessage) (resp *SnakeMessage, err error)
 }
 
@@ -99,18 +105,22 @@ func (c *SessionInternalAPIService) WatchInstanceUnregistered(callback func(inst
 	return c.config.Registry.WatchInstanceUnregistered("SessionInternalAPI", callback)
 }
 
-func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, arguments []byte) (r []byte, err error) {
-	pCtx, _, err := h.config.ContextMarshaller.Unmarshal(ctx)
+func (h *SessionInternalAPIService) listenRPC(funcName string, arguments []byte) (r []byte, err error) {
+	d := DataWithContextApiProtoRpcGo{}
+	err = json.Unmarshal(arguments, &d)
+	if err != nil {
+		return nil, err
+	}
+	pCtx, _, err := h.config.ContextMarshaller.Unmarshal(d.Ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	callRpc := func(ctx context.Context) error {
-
 		switch funcName {
 		case "Connect":
 			arg := ConnectReq{}
-			err = arg.UnmarshalVT(arguments)
+			err = arg.UnmarshalVT(d.Data)
 			if err != nil {
 				return err
 			}
@@ -133,7 +143,7 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, argum
 			return nil
 		case "snake_func_name":
 			arg := SnakeMessage{}
-			err = arg.UnmarshalVT(arguments)
+			err = arg.UnmarshalVT(d.Data)
 			if err != nil {
 				return err
 			}
@@ -158,7 +168,6 @@ func (h *SessionInternalAPIService) listenRPC(funcName string, ctx []byte, argum
 			//TODO: not sure about this behavior
 			return fmt.Errorf("call of unknown rpc %s %s", "in service SessionInternalAPI ", funcName)
 		}
-
 	}
 
 	wrap := h.config.RPCWrapper
@@ -209,8 +218,9 @@ func (s *SessionInternalAPIEventsPublisher) SetWrapper(PubSubWrapper func(ctx co
 //
 
 type SessionInternalAPIClient struct {
-	client *client.Client
-	block  bool
+	client     *client.Client
+	block      bool
+	subscriber *SessionInternalAPIEventsSubscriber
 }
 
 func NewSessionInternalAPIClient(config client.Config, opt ...ClientOpt) (*SessionInternalAPIClient, error) {
@@ -219,8 +229,13 @@ func NewSessionInternalAPIClient(config client.Config, opt ...ClientOpt) (*Sessi
 		return nil, err
 	}
 	cli := &SessionInternalAPIClient{
-		client: cClient,
+		client:     cClient,
+		subscriber: NewSessionInternalAPIEventsSubscriber(config.PubSub),
 	}
+	cli.subscriber.SetLogger(config.Logger)
+	cli.subscriber.SetWrapper(config.PubSubWrapper)
+	cli.subscriber.SetContextMarshaller(config.ContextMarshaller)
+
 	for _, o := range opt {
 		o(cli)
 	}
@@ -271,4 +286,35 @@ func (c *SessionInternalAPIClient) SnakeFuncName(ctx context.Context, request *S
 	}
 
 	return response, nil
+}
+
+//
+// Events Subscriber
+//
+
+type SessionInternalAPIEventsSubscriber struct {
+	ps      pubsub.PubSub
+	cm      contextmarshaller.ContextMarshaller
+	wrapper PubSubWrap
+	logger  logger.Logger
+}
+
+func NewSessionInternalAPIEventsSubscriber(ps pubsub.PubSub) *SessionInternalAPIEventsSubscriber {
+	return &SessionInternalAPIEventsSubscriber{
+		ps:     ps,
+		cm:     &contextmarshaller.DefaultCtxMarshaller{},
+		logger: &logger.DefaultLogger{},
+	}
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetContextMarshaller(cm contextmarshaller.ContextMarshaller) {
+	s.cm = cm
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetWrapper(PubSubWrapper func(ctx context.Context, ServiceName, EventName string, PubSubCall func(ctx context.Context) error) error) {
+	s.wrapper = PubSubWrapper
+}
+
+func (s *SessionInternalAPIEventsSubscriber) SetLogger(log logger.Logger) {
+	s.logger = log
 }

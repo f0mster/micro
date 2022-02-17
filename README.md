@@ -7,14 +7,14 @@
 
 ## Кодогенерация
 
-Установка: вызывать один из предложенных вариантов в `Makefile (linux, win, darwin)`
+Установка: `go install github.com/f0mster/micro/cmd/...`
 
 Пример для файла: `api.proto`
 
 Перед запуском выполнить
 ```protoc -I=. --proto_path=. --go_out=. --go-vtproto_out=. api.proto```
 После чего выполнить
-```rendall-rpc-code-gen -proto=api.proto```
+```micro-rpc-code-gen -proto=api.proto```
 
 ### Функции
 
@@ -43,12 +43,35 @@ service SessionInternalAPIService {
  */
 service SessionInternalAPIService {
 }
+
+message OnConnect {
+    string id = 1;
+}
+message OnDisconnect {}
+message OnUserOnline {}
+message OnUserOffline {}
+message UserChanged {
+    string id = 1;
+    string changed_field = 2;
+}
 ```
 
 В результате кодогенерации в client появится функции `SubscribeOnConnect`, `SubscribeOnDisconnect`
 , `SubscribeOnUserOnline`, `SubscribeOnUserOffline`, `SubscribeUserChanged`
 В сервере появится функции `PublishOnConnect`, `PublishOnDisconnect`, `PublishOnUserOnline`, `PublishOnUserOffline`
 , `PublishUserChanged`
+
+### Custom topics for events
+
+If you need to set custom topic for event you should add `:your_topic_name` after message name. 
+```
+// @event OnUserOnline:my.awesome.topic, OnUserOffline:another.topic
+service SessionInternalAPIService {
+}
+message OnUserOnline {}
+message OnUserOffline {}
+```
+
 
 ## Использование
 

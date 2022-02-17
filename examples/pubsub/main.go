@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 
-	"github.com/f0mster/micro/client"
 	"github.com/f0mster/micro/examples/pubsub/api"
-	pubsub2 "github.com/f0mster/micro/pubsub"
-	events_memory "github.com/f0mster/micro/pubsub/memory"
-	registry_memory "github.com/f0mster/micro/registry/memory"
-	rpc_memory "github.com/f0mster/micro/rpc/memory"
-	"github.com/f0mster/micro/server"
+	"github.com/f0mster/micro/pkg/metadata"
+	pkgpubsub "github.com/f0mster/micro/pkg/pubsub"
+	events_memory "github.com/f0mster/micro/pkg/pubsub/memory"
 )
 
 func main() {
@@ -23,34 +19,30 @@ func main() {
 	cancel()
 }
 
-var rpc = rpc_memory.New(60 * time.Second)
 var pubsub = events_memory.New()
-var reg = registry_memory.New()
 
 func serverSide() {
 	// structure that can handle server functions
-	servi := serv{}
-	serverCfg := server.Config{Registry: reg, RPC: rpc, PubSub: pubsub}
-	srv, _ := server.NewServer(serverCfg)
-	serviceSession, _ := api.RegisterSessionInternalAPIServer(&servi, srv)
 	ctx := context.Background()
-	err := serviceSession.PublishConnectEvent(ctx, &api.ConnectEvent{Id: "wqdqwd"})
+	ctx = metadata.NewContext(ctx, metadata.Metadata{"www": "111"})
+	publisher := api.NewSessionInternalAPIEventsPublisher(pubsub)
+	err := publisher.PublishConnectEvent(ctx, &api.ConnectEvent{Id: "wqdqwd"})
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func clientSide() pubsub2.CancelFunc {
-	clientCfg := client.Config{Registry: reg, RPC: rpc, PubSub: pubsub}
-
-	// this is a client
-	clientSession, err := api.NewSessionInternalAPIClient(clientCfg)
-	if err != nil {
-		log.Fatal(err)
-	}
+func clientSide() pkgpubsub.CancelFunc {
+	sub := api.NewSessionInternalAPIEventsSubscriber(pubsub)
 	wg.Add(1)
-	cancel, err := clientSession.SubscribeConnectEvent(func(context context.Context, event *api.ConnectEvent) error {
+	cancel, err := sub.SubscribeConnectEvent(func(context context.Context, event *api.ConnectEvent) error {
 		fmt.Println("connect event happens")
+		meta, ok := metadata.FromContext(context)
+		if !ok {
+			panic("error getting data from context")
+		}
+		fmt.Printf("'%+v'", meta)
+		fmt.Printf("'%+v'", event)
 		wg.Done()
 		return nil
 	})
@@ -61,7 +53,3 @@ func clientSide() pubsub2.CancelFunc {
 }
 
 var wg sync.WaitGroup
-
-type serv struct {
-	srv *api.SessionInternalAPIService
-}

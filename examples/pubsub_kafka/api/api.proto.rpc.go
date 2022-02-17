@@ -105,6 +105,9 @@ func (s *SessionInternalAPIService) PublishConnectEvent(ctx context.Context, eve
 func (s *SessionInternalAPIService) PublishSnakeCaseEvent(ctx context.Context, event *SnakeCaseEvent) error {
 	return s.publisher.PublishSnakeCaseEvent(ctx, event)
 }
+func (s *SessionInternalAPIService) PublishEventWithTopic(ctx context.Context, event *EventWithTopic) error {
+	return s.publisher.PublishEventWithTopic(ctx, event)
+}
 
 func (h *SessionInternalAPIService) listenRPC(funcName string, arguments []byte) (r []byte, err error) {
 	d := DataWithContextApiProtoRpcGo{}
@@ -235,6 +238,42 @@ func (s *SessionInternalAPIEventsPublisher) PublishSnakeCaseEvent(ctx context.Co
 	}
 	return s.wrapper(ctx, "SessionInternalAPI", "snake_case_event", cb)
 }
+func (s *SessionInternalAPIEventsPublisher) PublishEventWithTopic(ctx context.Context, event *EventWithTopic) error {
+	var r []byte
+	var err error
+	if event != nil {
+		r, err = event.MarshalVT()
+		if err != nil {
+			return fmt.Errorf("can't marshal event to proto: %w", err)
+		}
+	}
+	cb := func(ctx context.Context) error {
+		ctxData, err := s.cm.Marshal(ctx)
+		if err != nil {
+			return fmt.Errorf("can't marshal context data: %w", err)
+		}
+		ec := DataWithContextApiProtoRpcGo{
+			Ctx:  ctxData,
+			Data: r,
+		}
+		eventData, err := json.Marshal(ec)
+		if err != nil {
+			return fmt.Errorf("can't marshal json data: %w", err)
+		}
+
+		err = s.ps.PublishToTopic("some.topic.name", eventData)
+
+		if err != nil {
+			return fmt.Errorf("error while publishing error: %w", err)
+		}
+		return nil
+	}
+
+	if s.wrapper == nil {
+		return cb(ctx)
+	}
+	return s.wrapper(ctx, "SessionInternalAPI", "EventWithTopic", cb)
+}
 
 //
 // Client
@@ -300,6 +339,13 @@ func (c *SessionInternalAPIClient) UnsubscribeSnakeCaseEvent() {
 }
 func (c *SessionInternalAPIClient) SubscribeSnakeCaseEvent(callback func(ctx context.Context, event *SnakeCaseEvent) error) (stop pubsub.CancelFunc, err error) {
 	return c.subscriber.SubscribeSnakeCaseEvent(callback)
+}
+
+func (c *SessionInternalAPIClient) UnsubscribeEventWithTopic() {
+	c.subscriber.UnsubscribeEventWithTopic()
+}
+func (c *SessionInternalAPIClient) SubscribeEventWithTopic(callback func(ctx context.Context, event *EventWithTopic) error) (stop pubsub.CancelFunc, err error) {
+	return c.subscriber.SubscribeEventWithTopic(callback)
 }
 
 //
@@ -413,6 +459,52 @@ func (c *SessionInternalAPIEventsSubscriber) SubscribeSnakeCaseEvent(callback fu
 				return nil
 			}
 			err = wrap(ctx, "SessionInternalAPI", "snake_case_event", wrapCB)
+			return err
+		}
+		err = callback(ctx, &ev)
+		if err != nil {
+			return fmt.Errorf("error while calling subscribe callback: %w", err)
+		}
+		return nil
+	})
+
+	return stop, err
+}
+
+func (c *SessionInternalAPIEventsSubscriber) UnsubscribeEventWithTopic() {
+	c.ps.UnsubscribeFromTopic("some.topic.name")
+}
+
+// Nil error in callback required to stop event retrying, if it supported by pubsub provider
+func (c *SessionInternalAPIEventsSubscriber) SubscribeEventWithTopic(callback func(ctx context.Context, event *EventWithTopic) error) (stop pubsub.CancelFunc, err error) {
+
+	stop, err = c.ps.SubscribeForTopic("some.topic.name", func(event []byte) error {
+
+		ec := DataWithContextApiProtoRpcGo{}
+		json.Unmarshal(event, &ec)
+		log := c.logger
+		ev := EventWithTopic{}
+		err := ev.UnmarshalVT(ec.Data)
+		log.Debug("got event", "SessionInternalAPI", "EventWithTopic")
+		if err != nil {
+			log.Error(err, "error while unmarshalling event", "SessionInternalAPI", "EventWithTopic", string(event))
+			return fmt.Errorf("error while unmarshalling event: %w", err)
+		}
+		ctx, _, err := c.cm.Unmarshal(ec.Ctx)
+		if err != nil {
+			log.Error(err, "error while unmarshalling context data", "SessionInternalAPI", "EventWithTopic", string(ec.Ctx))
+			return fmt.Errorf("error while unmarshalling context data: %w", err)
+		}
+		wrap := c.wrapper
+		if wrap != nil {
+			wrapCB := func(ctx context.Context) error {
+				err = callback(ctx, &ev)
+				if err != nil {
+					return fmt.Errorf("error while calling subscribe callback: %w", err)
+				}
+				return nil
+			}
+			err = wrap(ctx, "SessionInternalAPI", "EventWithTopic", wrapCB)
 			return err
 		}
 		err = callback(ctx, &ev)
